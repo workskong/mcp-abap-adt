@@ -1,7 +1,14 @@
-# mcp-abap-adt: Modern ABAP Development Tools MCP Server
+# mcp-abap-adt: Your Gateway to ABAP Development Tools (ADT)
 
-[![smithery badge](https://smithery.ai/badge/@mario-andreschak/mcp-abap/server/@mario-andreschak connect to SAP ABAP systems with the Model Context Protocol (MCP).**  
-This server bridges your ABAP backend and modern development tools like [Cline](https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev), enabling seamless retrieval of ABAP source code, table structures, and more.
+[![smithery badge](https://smithery.ai/badge/@mario-andreschak/mcp-abap-adt)](https://smithery.ai/server/@mario-andreschak/mcp-abap-adt)
+
+This project provides a server that allows you to interact with SAP ABAP systems using the Model Context Protocol (MCP).  Think of it as a bridge that lets tools like [Cline](https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev) (a VS Code extension) talk to your ABAP system and retrieve information like source code, table structures, and more.  It's like having a remote control for your ABAP development environment!
+
+<a href="https://glama.ai/mcp/servers/gwkh12xlu7">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/gwkh12xlu7/badge" alt="ABAP ADT MCP server" />
+</a>
+
+This guide is designed for beginners, so we'll walk through everything step-by-step.  We'll cover:
 
 ## 🚀 Quick Start
 
