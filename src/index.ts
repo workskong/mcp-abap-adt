@@ -80,7 +80,7 @@ export class mcp_abap_adt_server {
     this.server = new Server(  // Initialize the MCP server
       {
         name: 'mcp-abap-adt', // Server name
-        version: '0.1.0',       // Server version
+        version: '1.1.1',       // Server version
       },
       {
         capabilities: {
@@ -97,244 +97,318 @@ export class mcp_abap_adt_server {
    * @private
    */
   private setupHandlers() {
-    // Setup tool handlers
-
     // Handler for ListToolsRequest
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        tools: [ // Define available tools
+        tools: [
           {
             name: 'GetProgram',
-            description: 'Retrieve ABAP program source code',
+            description: 'Retrieve ABAP program source code with metadata including description, object name, and type',
             inputSchema: {
               type: 'object',
               properties: {
                 program_name: {
                   type: 'string',
-                  description: 'Name of the ABAP program'
+                  description: 'Name of the ABAP program to retrieve (e.g., "RSABAPPROGRAM", "ZMY_PROGRAM")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
                 }
               },
-              required: ['program_name']
+              required: ['program_name'],
+              additionalProperties: false
             }
           },
           {
             name: 'GetClass',
-            description: 'Retrieve ABAP class source code',
+            description: 'Retrieve ABAP class source code and metadata',
             inputSchema: {
               type: 'object',
               properties: {
                 class_name: {
                   type: 'string',
-                  description: 'Name of the ABAP class'
+                  description: 'Name of the ABAP class to retrieve (e.g., "CL_WB_PGEDITOR_INITIAL_SCREEN", "ZCL_MY_CLASS")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
                 }
               },
-              required: ['class_name']
-            }
-          },
-          {
-            name: 'GetWhereUsed',
-            description: 'Retrieve Where Used information for ABAP objects',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                object_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP object'
-                },
-                object_type: {
-                  type: 'string',
-                  description: 'Type of the ABAP object (CLASS, INTERFACE, PROGRAM, FUNCTION, TABLE, STRUCTURE)',
-                  enum: ['CLASS', 'INTERFACE', 'PROGRAM', 'FUNCTION', 'TABLE', 'STRUCTURE']
-                },
-                max_results: {
-                  type: 'number',
-                  description: 'Maximum number of results to return',
-                  default: 100
-                }
-              },
-              required: ['object_name']
-            }
-          },
-          {
-            name: 'GetFunctionGroup',
-            description: 'Retrieve ABAP Function Group source code',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                function_group: {
-                  type: 'string',
-                  description: 'Name of the function module'
-                }
-              },
-              required: ['function_group']
-            }
-          },
-          {
-            name: 'GetFunction',
-            description: 'Retrieve ABAP Function Module source code',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                function_name: {
-                  type: 'string',
-                  description: 'Name of the function module'
-                },
-                function_group: {
-                  type: 'string',
-                  description: 'Name of the function group'
-                }
-              },
-              required: ['function_name', 'function_group']
-            }
-          },
-          {
-            name: 'GetStructure',
-            description: 'Retrieve ABAP Structure',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                structure_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP Structure'
-                }
-              },
-              required: ['structure_name']
-            }
-          },
-          {
-            name: 'GetTable',
-            description: 'Retrieve ABAP table structure',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                table_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP table'
-                }
-              },
-              required: ['table_name']
-            }
-          },
-          {
-            name: 'GetTableContents',
-            description: 'Retrieve contents of an ABAP table',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                table_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP table'
-                },
-                max_rows: {
-                  type: 'number',
-                  description: 'Maximum number of rows to retrieve',
-                  default: 100
-                }
-              },
-              required: ['table_name']
-            }
-          },
-          {
-            name: 'GetPackage',
-            description: 'Retrieve ABAP package details',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                package_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP package'
-                }
-              },
-              required: ['package_name']
-            }
-          },
-          {
-            name: 'GetTypeInfo',
-            description: 'Retrieve ABAP type information',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                type_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP type'
-                }
-              },
-              required: ['type_name']
-            }
-          },
-          {
-            name: 'GetInclude',
-            description: 'Retrieve ABAP Include Source Code',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                include_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP Include'
-                }
-              },
-              required: ['include_name']
-            }
-          },
-          {
-            name: 'SearchObject',
-            description: 'Search for ABAP objects using quick search',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'Search query string'
-                },
-                maxResults: {
-                  type: 'number',
-                  description: 'Maximum number of results to return',
-                  default: 100
-                }
-              },
-              required: ['query']
-            }
-          },
-          {
-            name: 'GetTransaction',
-            description: 'Retrieve ABAP transaction details',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                transaction_name: {
-                  type: 'string',
-                  description: 'Name of the ABAP transaction'
-                }
-              },
-              required: ['transaction_name']
+              required: ['class_name'],
+              additionalProperties: false
             }
           },
           {
             name: 'GetInterface',
-            description: 'Retrieve ABAP interface source code',
+            description: 'Retrieve ABAP interface source code and metadata',
             inputSchema: {
               type: 'object',
               properties: {
                 interface_name: {
                   type: 'string',
-                  description: 'Name of the ABAP interface'
+                  description: 'Name of the ABAP interface to retrieve (e.g., "ZIF_MY_INTERFACE", "IF_OO_ADT_CLASSRUN")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
                 }
               },
-              required: ['interface_name']
+              required: ['interface_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetFunction',
+            description: 'Retrieve ABAP function module source code with metadata including description, object name, and type. Function group will be auto-detected if not provided.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                function_name: {
+                  type: 'string',
+                  description: 'Name of the function module to retrieve (e.g., "RFC_READ_TABLE", "ZMY_FUNCTION")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                },
+                function_group: {
+                  type: 'string',
+                  description: 'Name of the function group containing the function module (optional - will be auto-detected if not provided) (e.g., "RFC1", "ZFG")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 26
+                }
+              },
+              required: ['function_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetFunctionGroup',
+            description: 'Retrieve ABAP function group source code',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                function_group: {
+                  type: 'string',
+                  description: 'Name of the function group to retrieve (e.g., "WBABAP", "ZFG")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 26
+                }
+              },
+              required: ['function_group'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetTable',
+            description: 'Retrieve ABAP table structure definition',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                table_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP table to retrieve (e.g., "SBOOK", "ZMY_TABLE")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 16
+                }
+              },
+              required: ['table_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetTableContents',
+            description: 'Retrieve contents of an ABAP table (requires custom service implementation)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                table_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP table to retrieve contents from (e.g., "SBOOK", "ZMY_TABLE")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 16
+                },
+                max_rows: {
+                  type: 'number',
+                  description: 'Maximum number of rows to retrieve from the table',
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 100
+                }
+              },
+              required: ['table_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetStructure',
+            description: 'Retrieve ABAP structure definition',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                structure_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP structure to retrieve (e.g., "ZMY_STRUCT", "BAPIRET2")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                }
+              },
+              required: ['structure_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetInclude',
+            description: 'Retrieve ABAP include program source code',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                include_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP include program to retrieve (e.g., "ZMY_INCLUDE", "LCL_ABAP")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                }
+              },
+              required: ['include_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetTypeInfo',
+            description: 'Retrieve ABAP type information (domain or data element)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                type_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP type to retrieve (domain or data element) (e.g., "ZMY_TYPE", "CHAR10")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                }
+              },
+              required: ['type_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetPackage',
+            description: 'Retrieve ABAP package details and contents with object descriptions',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                package_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP package to retrieve (e.g., "ZMY_PACKAGE", "$TMP")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                }
+              },
+              required: ['package_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetTransaction',
+            description: 'Retrieve ABAP transaction details and properties',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                transaction_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP transaction to retrieve (e.g., "SE80", "ZMY_TRANSACTION")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 20
+                }
+              },
+              required: ['transaction_name'],
+              additionalProperties: false
             }
           },
           {
             name: 'GetCds',
-            description: 'Retrieve CDS view source code',
+            description: 'Retrieve CDS view source code with package information and metadata',
             inputSchema: {
               type: 'object',
               properties: {
                 cds_name: {
                   type: 'string',
-                  description: 'Name of the CDS view'
+                  description: 'Name of the CDS view to retrieve (e.g., "I_Currency", "ZMY_CDSVIEW")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
                 }
               },
-              required: ['cds_name']
+              required: ['cds_name'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'SearchObject',
+            description: 'Search for ABAP objects using quick search functionality',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Search query string to find ABAP objects (supports wildcards like *) (e.g., "ZMY*", "CL_*")',
+                  minLength: 1,
+                  maxLength: 100
+                },
+                maxResults: {
+                  type: 'number',
+                  description: 'Maximum number of search results to return',
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 100
+                }
+              },
+              required: ['query'],
+              additionalProperties: false
+            }
+          },
+          {
+            name: 'GetWhereUsed',
+            description: 'Find references and usages of ABAP objects across the system',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                object_name: {
+                  type: 'string',
+                  description: 'Name of the ABAP object to find references for (e.g., "ZCL_MY_CLASS", "SBOOK")',
+                  pattern: '^[A-Z][A-Z0-9_]*$',
+                  minLength: 1,
+                  maxLength: 30
+                },
+                object_type: {
+                  type: 'string',
+                  description: 'Type of the ABAP object to search for references',
+                  enum: [
+                    'CLASS', 'INTERFACE', 'PROGRAM', 'FUNCTION', 'TABLE', 'STRUCTURE',
+                    'REPORT', 'INCLUDE', 'TYPE', 'DOMAIN', 'DATA_ELEMENT', 'VIEW',
+                    'SEARCH_HELP', 'LOCK_OBJECT', 'TRANSFORMATION', 'ENHANCEMENT',
+                    'PACKAGE', 'TRANSPORT', 'FORM', 'METHOD', 'ATTRIBUTE', 'CONSTANT',
+                    'VARIABLE', 'PARAMETER', 'SELECT_OPTION', 'FIELD_SYMBOL', 'DATA',
+                    'CDS_VIEW', 'AMDP', 'DDIC_OBJECT', 'AUTHORIZATION_OBJECT', 'NUMBER_RANGE'
+                  ],
+                  default: 'CLASS'
+                },
+                max_results: {
+                  type: 'number',
+                  description: 'Maximum number of reference results to return',
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 100
+                }
+              },
+              required: ['object_name'],
+              additionalProperties: false
             }
           }
         ]
@@ -343,42 +417,49 @@ export class mcp_abap_adt_server {
 
     // Handler for CallToolRequest
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      switch (request.params.name) {
-        case 'GetProgram':
-          return await handleGetProgram(request.params.arguments);
-        case 'GetClass':
-          return await handleGetClass(request.params.arguments as any);
-        case 'GetWhereUsed':
-          return await handleGetWhereUsed(request.params.arguments as any);
-        case 'GetFunction':
-          return await handleGetFunction(request.params.arguments);
-        case 'GetFunctionGroup':
-          return await handleGetFunctionGroup(request.params.arguments);
-        case 'GetStructure':
-          return await handleGetStructure(request.params.arguments);
-        case 'GetTable':
-          return await handleGetTable(request.params.arguments);
-        case 'GetTableContents':
-          return await handleGetTableContents(request.params.arguments as any);
-        case 'GetPackage':
-          return await handleGetPackage(request.params.arguments);
-        case 'GetTypeInfo':
-          return await handleGetTypeInfo(request.params.arguments);
-        case 'GetInclude':
-          return await handleGetInclude(request.params.arguments);
-        case 'SearchObject':
-          return await handleSearchObject(request.params.arguments);
-        case 'GetInterface':
-          return await handleGetInterface(request.params.arguments);
-        case 'GetTransaction':
-          return await handleGetTransaction(request.params.arguments);
-        case 'GetCds':
-          return await handleGetCDS(request.params.arguments as any);
-        default:
-          throw new McpError(
-            ErrorCode.MethodNotFound,
-            `Unknown tool: ${request.params.name}`
-          );
+      try {
+        switch (request.params.name) {
+          case 'GetProgram':
+            return await handleGetProgram(request.params.arguments);
+          case 'GetClass':
+            return await handleGetClass(request.params.arguments as any);
+          case 'GetInterface':
+            return await handleGetInterface(request.params.arguments);
+          case 'GetFunction':
+            return await handleGetFunction(request.params.arguments);
+          case 'GetFunctionGroup':
+            return await handleGetFunctionGroup(request.params.arguments);
+          case 'GetTable':
+            return await handleGetTable(request.params.arguments);
+          case 'GetTableContents':
+            return await handleGetTableContents(request.params.arguments);
+          case 'GetStructure':
+            return await handleGetStructure(request.params.arguments);
+          case 'GetInclude':
+            return await handleGetInclude(request.params.arguments);
+          case 'GetTypeInfo':
+            return await handleGetTypeInfo(request.params.arguments);
+          case 'GetPackage':
+            return await handleGetPackage(request.params.arguments);
+          case 'GetTransaction':
+            return await handleGetTransaction(request.params.arguments);
+          case 'GetCds':
+            return await handleGetCDS(request.params.arguments as any);
+          case 'SearchObject':
+            return await handleSearchObject(request.params.arguments);
+          case 'GetWhereUsed':
+            return await handleGetWhereUsed(request.params.arguments as any);
+          default:
+            throw new McpError(
+              ErrorCode.MethodNotFound,
+              `Unknown tool: ${request.params.name}. Available tools: GetProgram, GetClass, GetInterface, GetFunction, GetFunctionGroup, GetTable, GetTableContents, GetStructure, GetInclude, GetTypeInfo, GetPackage, GetTransaction, GetCds, SearchObject, GetWhereUsed`
+            );
+        }
+      } catch (error) {
+        if (error instanceof McpError) {
+          throw error;
+        }
+        return return_error(error);
       }
     });
 
@@ -401,5 +482,6 @@ export class mcp_abap_adt_server {
 // Create and run the server
 const server = new mcp_abap_adt_server();
 server.run().catch((error) => {
+  console.error('Server startup failed:', error);
   process.exit(1);
 });
