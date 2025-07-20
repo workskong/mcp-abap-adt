@@ -23,7 +23,7 @@ import { handleGetTransaction } from './handlers/handle_Get_Transaction.js';
 import { handleSearchObject } from './handlers/handle_SearchObject.js';
 import { handleGetWhereUsed } from './handlers/handle_WhereUsed.js';
 
-import { return_error } from './lib/utils.js';
+import { return_error, getBaseUrl, makeAdtRequest } from './lib/utils.js';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
@@ -34,13 +34,29 @@ export interface SapConfig {
   client: string;
 }
 
+export { getBaseUrl, makeAdtRequest, return_error };
+
 export function getConfig(): SapConfig {
   const url = process.env.SAP_URL;
   const username = process.env.SAP_USERNAME;
   const password = process.env.SAP_PASSWORD;
   const client = process.env.SAP_CLIENT;
+
+  console.log('Configuration check:', {
+    hasUrl: !!url,
+    hasUsername: !!username,
+    hasPassword: !!password,
+    hasClient: !!client,
+    url: url ? `${url.substring(0, 20)}...` : 'undefined'
+  });
+
   if (!url || !username || !password || !client) {
-    throw new Error('Missing required environment variables: SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT');
+    const missing: string[] = [];
+    if (!url) missing.push('SAP_URL');
+    if (!username) missing.push('SAP_USERNAME');
+    if (!password) missing.push('SAP_PASSWORD');
+    if (!client) missing.push('SAP_CLIENT');
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
   return { url, username, password, client };
 }
@@ -49,7 +65,7 @@ export function getConfig(): SapConfig {
 const toolDefinitions = [
   {
     name: 'GetDDICStructure',
-    description: '스트럭쳐 정의를 조회합니다.',
+    description: '스트럭쳐 정의를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'DDIC structure name' } },
@@ -59,7 +75,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetDDICTypeInfo',
-    description: '타입 정보를 조회합니다.',
+    description: '타입 정보를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'DDIC type name' } },
@@ -69,7 +85,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetDDICTable',
-    description: '테이블 정의를 조회합니다.',
+    description: '테이블 정의를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Table name' } },
@@ -79,7 +95,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetDDICCDS',
-    description: 'CDS 뷰 정의를 조회합니다.',
+    description: 'CDS 뷰 정의를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'CDS view name' } },
@@ -89,7 +105,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetDDICDataElement',
-    description: '데이터 엘리먼트 정의를 조회합니다.',
+    description: '데이터 엘리먼트 정의를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Data element name' } },
@@ -99,7 +115,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetDDICDomain',
-    description: '도메인 정의를 조회합니다.',
+    description: '도메인 정의를 조회',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Domain name' } },
@@ -109,7 +125,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetProgram',
-    description: 'ABAP 프로그램 소스코드를 조회합니다.',
+    description: 'ABAP 프로그램 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: { program_name: { type: 'string', description: 'Program name' } },
@@ -119,7 +135,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetClass',
-    description: 'ABAP 클래스 소스코드를 조회합니다.',
+    description: 'ABAP 클래스 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: { class_name: { type: 'string', description: 'Class name' } },
@@ -129,7 +145,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetFunction',
-    description: 'ABAP 펑션 모듈 소스코드를 조회합니다.',
+    description: 'ABAP 펑션 모듈 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: {
@@ -142,7 +158,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetFunctionGroup',
-    description: 'ABAP 펑션 그룹 소스코드를 조회합니다.',
+    description: 'ABAP 펑션 그룹 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: { function_group: { type: 'string', description: 'Function group name' } },
@@ -152,7 +168,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetInterface',
-    description: 'ABAP 인터페이스 소스코드를 조회합니다.',
+    description: 'ABAP 인터페이스 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: { interface_name: { type: 'string', description: 'Interface name' } },
@@ -162,7 +178,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetInclude',
-    description: 'ABAP 인클루드 소스코드를 조회합니다.',
+    description: 'ABAP 인클루드 소스코드를 조회',
     inputSchema: {
       type: 'object',
       properties: { include_name: { type: 'string', description: 'Include name' } },
@@ -172,7 +188,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetPackage',
-    description: 'ABAP 패키지 상세 정보를 조회합니다.',
+    description: 'ABAP 패키지 상세 정보를 조회',
     inputSchema: {
       type: 'object',
       properties: { package_name: { type: 'string', description: 'Package name' } },
@@ -182,7 +198,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetTransaction',
-    description: 'ABAP 트랜잭션 상세 정보를 조회합니다.',
+    description: 'ABAP 트랜잭션 상세 정보를 조회',
     inputSchema: {
       type: 'object',
       properties: { transaction_name: { type: 'string', description: 'Transaction name' } },
@@ -192,7 +208,7 @@ const toolDefinitions = [
   },
   {
     name: 'SearchObject',
-    description: 'ABAP 오브젝트를 검색합니다.',
+    description: 'ABAP 오브젝트를 검색',
     inputSchema: {
       type: 'object',
       properties: {
@@ -205,7 +221,7 @@ const toolDefinitions = [
   },
   {
     name: 'GetWhereUsed',
-    description: 'ABAP 오브젝트의 참조 및 사용처를 조회합니다.',
+    description: 'ABAP 오브젝트의 참조 및 사용처를 조회',
     inputSchema: {
       type: 'object',
       properties: {

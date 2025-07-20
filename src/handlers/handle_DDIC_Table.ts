@@ -12,10 +12,13 @@ export async function handle_DDIC_Table(args: DDICTableArgs) {
     }
     
     const url = `${await getBaseUrl()}/sap/bc/adt/ddic/elementinfo?path=${args.object_name}`;
+    console.log(`Requesting table info for: ${args.object_name} at URL: ${url}`);
+    
     const response = await makeAdtRequest(url, 'GET', 30000);
     
     return return_response(response);
   } catch (error) {
+    console.error(`Error in handle_DDIC_Table for ${args?.object_name}:`, error);
     return return_error(error);
   }
 }

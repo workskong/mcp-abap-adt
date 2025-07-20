@@ -1,6 +1,5 @@
-import { McpError, ErrorCode } from '../lib/utils.js';
-import { makeAdtRequest, return_error, getBaseUrl } from '../lib/utils.js';
-import convert from 'xml-js';
+import { McpError, ErrorCode, convertXmlToJson } from '../lib/utils.js';
+import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils.js';
 
 interface GetPackageArgs {
   package_name: string;
@@ -20,21 +19,12 @@ export async function handleGetPackage(args: GetPackageArgs) {
     };
 
     const package_structure_response = await makeAdtRequest(nodeContentsUrl, 'POST', 30000, nodeContentsParams);
-    const result = convert.xml2js(package_structure_response.data, { compact: true });
 
-    const nodes = result["asx:abap"]?.["asx:values"]?.DATA?.TREE_CONTENT?.SEU_ADT_REPOSITORY_OBJ_NODE || [];
-    const extractedData = (Array.isArray(nodes) ? nodes : [nodes]).filter(node =>
-      node.OBJECT_NAME?._text && node.OBJECT_URI?._text
-    ).map(node => ({
-      OBJECT_TYPE: node.OBJECT_TYPE._text,
-      OBJECT_NAME: node.OBJECT_NAME._text,
-      OBJECT_DESCRIPTION: node.DESCRIPTION?._text,
-      OBJECT_URI: node.OBJECT_URI._text
-    }));
+    // XML → JSON 변환 및 단순화 (utils 함수 활용)
+    const jsonString = convertXmlToJson(package_structure_response.data);
 
-    return {
-      content: extractedData
-    };
+    // 일관된 포맷으로 반환
+    return return_response({ data: jsonString } as any);
 
   } catch (error) {
     return return_error(error);

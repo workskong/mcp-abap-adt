@@ -1,28 +1,103 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Agent } from 'https';
 import { AxiosResponse } from 'axios';
 import { getConfig, SapConfig } from '../index.js'; // getConfig needs to be exported from index.ts
+import convert from 'xml-js';
 
 export { McpError, ErrorCode, AxiosResponse };
 
+function removeNamespace(key: string) {
+    return key.replace(/^[^:]+:/, '');
+}
+
+function simplifyXmlJson(obj: any): any {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    if (Array.isArray(obj)) return obj.map(simplifyXmlJson);
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === '_attributes') {
+            for (const [attrKey, attrValue] of Object.entries(value as any)) {
+                result[removeNamespace(attrKey)] = attrValue;
+            }
+        } else if (key === '_text') {
+            return value;
+        } else if (typeof value === 'object' && value !== null) {
+            const simplified = simplifyXmlJson(value);
+            if (simplified !== null && simplified !== undefined) {
+                result[removeNamespace(key)] = simplified;
+            }
+        } else {
+            result[removeNamespace(key)] = value;
+        }
+    }
+    return result;
+}
+
+export function convertXmlToJson(xmlString: string): string {
+    try {
+        const jsonData = convert.xml2js(xmlString, {
+            compact: true,
+            ignoreAttributes: false
+        });
+        const simplifiedData = simplifyXmlJson(jsonData);
+        return JSON.stringify(simplifiedData, null, 2);
+    } catch (error: any) {
+        console.error('XML to JSON conversion failed:', error?.message || 'Unknown error');
+        return xmlString;
+    }
+}
+
 export function return_response(response: AxiosResponse) {
+    let responseData = response.data;
+    if (typeof responseData === 'string') {
+        const xmlStart = responseData.indexOf('<?xml');
+        if (xmlStart !== -1) {
+            const xmlString = responseData.substring(xmlStart);
+            const prefix = responseData.substring(0, xmlStart).trim();
+            const jsonString = convertXmlToJson(xmlString);
+            return {
+                isError: false,
+                content: [
+                    ...(prefix ? [{ type: 'text', text: prefix }] : []),
+                    { type: 'text', text: jsonString }
+                ]
+            };
+        } else if (responseData.trim().startsWith('<?xml')) {
+            responseData = convertXmlToJson(responseData);
+        }
+    }
     return {
         isError: false,
         content: [{
             type: 'text',
-            text: response.data
+            text: responseData
         }]
     };
 }
+
 export function return_error(error: any) {
+    let errorMessage = 'Unknown error';
+    if (error instanceof AxiosError) {
+        if (error.response?.data) {
+            errorMessage = `HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`;
+        } else if (error.message) {
+            errorMessage = `HTTP Error: ${error.message}`;
+        } else {
+            errorMessage = `HTTP Error: ${error.code || 'Unknown'}`;
+        }
+    } else if (error instanceof Error) {
+        errorMessage = error.message;
+    } else if (typeof error === 'string') {
+        errorMessage = error;
+    } else {
+        errorMessage = String(error);
+    }
     return {
         isError: true,
         content: [{
             type: 'text',
-            text: `Error: ${error instanceof AxiosError ? String(error.response?.data)
-                : error instanceof Error ? error.message
-                    : String(error)}`
+            text: `Error: ${errorMessage}`
         }]
     };
 }
@@ -41,13 +116,6 @@ export function createAxiosInstance() {
 
 // Cleanup function for tests
 export function cleanup() {
-    if (axiosInstance) {
-        // Clear any interceptors
-        const reqInterceptor = axiosInstance.interceptors.request.use((config) => config);
-        const resInterceptor = axiosInstance.interceptors.response.use((response) => response);
-        axiosInstance.interceptors.request.eject(reqInterceptor);
-        axiosInstance.interceptors.response.eject(resInterceptor);
-    }
     axiosInstance = null;
     config = undefined;
     csrfToken = null;
@@ -65,7 +133,7 @@ export async function getBaseUrl() {
     const { url } = config;
     try {
         const urlObj = new URL(url);
-        const baseUrl = Buffer.from(`${urlObj.origin}`);
+        const baseUrl = urlObj.origin;
         return baseUrl;
     } catch (error) {
         const errorMessage = `Invalid URL in configuration: ${error instanceof Error ? error.message : error}`;
@@ -80,8 +148,8 @@ export async function getAuthHeaders() {
     const { username, password, client } = config;
     const auth = Buffer.from(`${username}:${password}`).toString('base64'); // Create Basic Auth string
     return {
-        'Authorization': `Basic ${auth}`, // Basic Authentication header
-        'X-SAP-Client': client            // SAP client header
+        'Authorization': `Basic ${auth}`,
+        'X-SAP-Client': client
     };
 }
 
@@ -95,37 +163,36 @@ async function fetchCsrfToken(url: string): Promise<string> {
                 'x-csrf-token': 'fetch'
             }
         });
-
         const token = response.headers['x-csrf-token'];
         if (!token) {
             throw new Error('No CSRF token in response headers');
         }
-
-        // Extract and store cookies
         if (response.headers['set-cookie']) {
             cookies = response.headers['set-cookie'].join('; ');
         }
-
         return token;
     } catch (error) {
-        // Even if the request fails, try to get token from error response
         if (error instanceof AxiosError && error.response?.headers['x-csrf-token']) {
             const token = error.response.headers['x-csrf-token'];
             if (token) {
-                 // Extract and store cookies from the error response as well
                 if (error.response.headers['set-cookie']) {
                     cookies = error.response.headers['set-cookie'].join('; ');
                 }
                 return token;
             }
         }
-        // If we couldn't get token from error response either, throw the original error
         throw new Error(`Failed to fetch CSRF token: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 
-export async function makeAdtRequest(url: string, method: string, timeout: number, data?: any, params?: any) {
-    // For POST/PUT requests, ensure we have a CSRF token
+export async function makeAdtRequest(
+    url: string,
+    method: string,
+    timeout: number,
+    data?: any,
+    params?: any,
+    responseType: 'text' | 'json' = 'json'
+) {
     if ((method === 'POST' || method === 'PUT') && !csrfToken) {
         try {
             csrfToken = await fetchCsrfToken(url);
@@ -133,44 +200,53 @@ export async function makeAdtRequest(url: string, method: string, timeout: numbe
             throw new Error('CSRF token is required for POST/PUT requests but could not be fetched');
         }
     }
-
     const requestHeaders = {
         ...(await getAuthHeaders())
     };
-
-    // Add CSRF token for POST/PUT requests
     if ((method === 'POST' || method === 'PUT') && csrfToken) {
         requestHeaders['x-csrf-token'] = csrfToken;
     }
-
-    // Add cookies if available
     if (cookies) {
         requestHeaders['Cookie'] = cookies;
     }
-
-    const config: any = {
+    const config: AxiosRequestConfig = {
         method,
         url,
         headers: requestHeaders,
         timeout,
-        params: params
+        params: params,
+        responseType
     };
-
-    // Include data in the request configuration if provided
     if (data) {
         config.data = data;
     }
-
     try {
         const response = await createAxiosInstance()(config);
         return response;
     } catch (error) {
-        // If we get a 403 with "CSRF token validation failed", try to fetch a new token and retry
         if (error instanceof AxiosError && error.response?.status === 403 &&
             error.response.data?.includes('CSRF')) {
             csrfToken = await fetchCsrfToken(url);
-            config.headers['x-csrf-token'] = csrfToken;
-            return await createAxiosInstance()(config);
+            const retryConfig: AxiosRequestConfig = {
+                method,
+                url,
+                headers: { ...requestHeaders, 'x-csrf-token': csrfToken },
+                timeout,
+                params: params,
+                ...(data && { data }),
+                responseType
+            };
+            return await createAxiosInstance()(retryConfig);
+        }
+        if (error instanceof AxiosError) {
+            console.error(`ADT Request failed for ${method} ${url}:`, {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message
+            });
+        } else {
+            console.error(`ADT Request failed for ${method} ${url}:`, error);
         }
         throw error;
     }
