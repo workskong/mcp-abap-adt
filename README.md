@@ -83,21 +83,27 @@ npm test
 ### DDIC 조회 도구
 
 | API                | 기능            | 필수 파라미터     | 사용 예시                                     |
-|--------------------|----------------|-------------------|-----------------------------------------------|
-| GetDDICStructure   | 구조체 정의 조회| object_name       | `{"object_name": "SFLIGHT"}`                  |
-| GetDDICTable       | 테이블 구조 분석| object_name       | `{"object_name": "MARA"}`                     |
-| GetDDICCDS         | CDS 뷰 정의    | object_name       | `{"object_name": "I_Product"}`                |
-| GetDDICDataElement | 데이터 요소 정보| object_name       | `{"object_name": "MATNR"}`                    |
-| GetDDICDomain      | 도메인 상세 정보| object_name      | `{"object_name": "CHAR10"}`                   |
+|--------------------------|----------------------|---------------------|---------------------------------------------------|
+| GetDDICStructure         | 구조체 정의 조회     | object_name         | `{"object_name": "SFLIGHT"}`                      |
+| GetDDICTable             | 테이블 구조 분석     | object_name         | `{"object_name": "MARA"}`                         |
+| GetDDICCDS               | CDS 뷰 정의          | object_name         | `{"object_name": "I_Product"}`                    |
+| GetDDICDataElement       | 데이터 요소 정보     | object_name         | `{"object_name": "MATNR"}`                        |
+| GetDDICDataElements      | 데이터 요소 상세     | object_name         | `{"object_name": "MATNR"}`                        |
+| GetDDICDomain            | 도메인 상세 정보     | object_name         | `{"object_name": "CHAR10"}`                       |
+| GetDDICTypeInfo          | 타입 상세 정보       | object_name         | `{"object_name": "TYPE_NAME"}`                    |
+
 
 ### 개발 오브젝트 도구
 
 | API         | 기능               | 파라미터                            | 예시                                                         |
-|-------------|--------------------|--------------------------------------|--------------------------------------------------------------|
-| GetProgram  | 프로그램 소스 조회 | program_name                         | `{"program_name": "RSUSR003"}`                               |
-| GetClass    | 클래스 소스 조회   | class_name                           | `{"class_name": "CL_HTTP_CLIENT"}`                           |
-| GetFunction | 펑션 모듈 소스     | function_name, function_group        | `{"function_name": "RFC_READ_TABLE", "function_group": "SRFC"}`|
-| GetInterface| 인터페이스 정의    | interface_name                       | `{"interface_name": "IF_HTTP_CLIENT"}`                       |
+|---------------------|----------------------|------------------------------------------|-------------------------------------------------------------------|
+| GetProgram          | 프로그램 소스 조회   | program_name                             | `{"program_name": "RSUSR003"}`                                   |
+| GetClass            | 클래스 소스 조회     | class_name                               | `{"class_name": "CL_HTTP_CLIENT"}`                               |
+| GetFunction         | 펑션 모듈 소스       | function_name, function_group            | `{"function_name": "RFC_READ_TABLE", "function_group": "SRFC"}`   |
+| GetFunctionGroup    | 펑션 그룹 소스 조회  | function_group                           | `{"function_group": "SRFC"}`                                      |
+| GetInclude          | 인클루드 소스 조회   | include_name                             | `{"include_name": "LZPROGRAMU01"}`                                |
+| GetInterface        | 인터페이스 정의      | interface_name                           | `{"interface_name": "IF_HTTP_CLIENT"}`                            |
+| APIReleases         | API Release 정보     | query                                    | `{"query": "CL_HTTP_CLIENT"}`                                      |
 
 ### 분석 및 검색 도구
 
@@ -187,11 +193,27 @@ npm test
 ### 사용 예시
 
 ```bash
+
 # 클래스 소스코드 조회
 @tool GetClass class_name=CL_HTTP_CLIENT
 
 # 테이블 구조 분석
 @tool GetDDICTable object_name=SFLIGHT
+
+# 데이터 요소 상세 조회
+@tool GetDDICDataElements object_name=MATNR
+
+# 타입 상세 정보 조회
+@tool GetDDICTypeInfo object_name=TYPE_NAME
+
+# 펑션 그룹 소스 조회
+@tool GetFunctionGroup function_group=SRFC
+
+# 인클루드 소스 조회
+@tool GetInclude include_name=LZPROGRAMU01
+
+# API Release 정보 조회
+@tool APIReleases query=CL_HTTP_CLIENT
 
 # 오브젝트 검색 (와일드카드 지원)
 @tool SearchObject query=CL_HTTP* maxResults=10
@@ -261,17 +283,5 @@ npm run test:integration
 ## 📄 라이선스
 
 MIT License - 자유롭게 사용, 수정, 배포 가능합니다.
-
----
-
-## 🏆 특별한 장점
-
-- 🔒 **보안**: SAP 표준 인증 메커니즘 준수
-- ⚡ **성능**: 최적화된 ADT API 호출 및 캐싱
-- 🌐 **호환성**: 다양한 SAP 시스템 버전 지원
-- 📚 **완전성**: 60+ 오브젝트 타입 지원
-- 🔧 **확장성**: 플러그인 아키텍처로 기능 확장 가능
-
----
 
 **ABAP 개발의 새로운 경험하세요! 🚀**

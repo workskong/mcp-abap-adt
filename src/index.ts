@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 
 // === 핸들러 import (파일명 대소문자 일치) ===
 import { handle_DDIC_Structure } from './handlers/handle_DDIC_Structure.js';
+import { handel_API_Releases } from './handlers/handel_API_Releases.js';
 import { handle_DDIC_TypeInfo } from './handlers/handle_DDIC_TypeInfo.js';
 import { handle_DDIC_Table } from './handlers/handle_DDIC_Table.js';
 import { handle_DDIC_CDS } from './handlers/handle_DDIC_CDS.js';
@@ -218,6 +219,18 @@ const toolDefinitions = [
       required: ['query']
     },
     handler: handleSearchObject
+  },
+  {
+    name: 'API_Releases',
+    description: 'ADT 오브젝트의 API Release 정보를 조회',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'ADT 오브젝트 검색 쿼리(예: SBOOK, C_GREGORIANCALSGLDATEFUNCVH 등)' }
+      },
+      required: ['query']
+    },
+    handler: handel_API_Releases
   },
   {
     name: 'GetWhereUsed',
