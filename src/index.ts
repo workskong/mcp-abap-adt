@@ -42,7 +42,7 @@ export function getConfig(): SapConfig {
   const password = process.env.SAP_PASSWORD;
   const client = process.env.SAP_CLIENT;
 
-  console.log('Configuration check:', {
+  console.error('Configuration check:', {
     hasUrl: !!url,
     hasUsername: !!username,
     hasPassword: !!password,
