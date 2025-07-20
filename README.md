@@ -124,11 +124,15 @@ SAP_CLIENT=100
 
 ## 🔧 MCP 클라이언트 연동
 
-### Cline (VS Code Extension) 설정
+### Eclipse GitHub Copilot Extension 설정 (MCP 연동)
 
-1. **Cline 설치**: VS Code 마켓플레이스에서 "Cline" 확장 프로그램 설치
-2. **설정 파일 편집**: `cline_mcp_settings.json` 파일 열기
-3. **서버 설정 추가**
+1. **GitHub Copilot Extension 설치**  
+   - Eclipse Marketplace 또는 플러그인 관리에서 "GitHub Copilot" 설치
+
+2. **MCP 서버 설정 파일 편집**  
+   - 워크스페이스 또는 사용자 홈 디렉터리에 `copilot_mcp_settings.json`(혹은 비슷한 이름) 파일 생성/편집
+
+3. **서버 설정 예시**
    ```json
    {
      "mcpServers": {
@@ -141,8 +145,12 @@ SAP_CLIENT=100
      }
    }
    ```
+   > 실제 파일명·위치는 Copilot 플러그인 공식 문서를 참고하세요.
 
-#### 사용 예시 (Cline)
+4. **플러그인 재시작/설정 반영**  
+   - 설정 파일 변경 후 Eclipse를 재시작하거나, Copilot Extension을 재로드하여 반영
+
+#### 사용 예시 (Eclipse 내 MCP 명령)
 ```bash
 @tool GetProgram program_name=ZMY_PROGRAM
 @tool GetClass class_name=ZCL_MY_CLASS
@@ -150,6 +158,9 @@ SAP_CLIENT=100
 @tool SearchObject query=ZMY* maxResults=20
 @tool GetWhereUsed object_name=ZCL_MY_CLASS object_type=CLASS
 ```
+
+> MCP 서버의 경로(`"args"`)는 실제 MCP 서버 빌드 위치에 맞게 수정하세요.  
+> 사용법, 설정 위치, 파일명 등은 플러그인 배포 문서의 최신 정보를 참고하세요.
 
 ---
 
@@ -159,7 +170,7 @@ SAP_CLIENT=100
 |-------------------------------|--------------------------------------------------------------------------------------------|
 | **빌드 오류**                 | `npm install` 후 `npm run build` 실행                                                      |
 | **SAP 연결 오류**             | `.env` 파일 인증 정보, SAP 시스템 접근 가능 여부, ADT 서비스 활성화 상태 확인               |
-| **MCP 클라이언트 연결 오류**  | 서버 실행 상태, 경로 확인, VS Code 재시작                                                  |
+| **MCP 클라이언트 연결 오류**  | 서버 실행 상태, 경로 확인, Eclipse 또는 Copilot Extension 재시작                           |
 
 ### 디버깅
 - 개발 모드에서 MCP Inspector를 사용하여 디버깅:
