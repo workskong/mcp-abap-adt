@@ -100,7 +100,8 @@ export const toolDefinitions = [
       type: 'object',
       properties: {
         user: { type: 'string', description: 'User ID', default: 'DEV00' },
-        maxResults: { type: 'number', description: 'Max results', default: 5 }
+        maxResults: { type: 'number', description: 'Max results', default: 5 },
+        objectNameFilter: { type: 'string', description: 'Object name filter' }
       },
       required: ['user']
     },

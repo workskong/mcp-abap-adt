@@ -41,19 +41,14 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
 
     // <atom:entry> 요소 개수 제한 및 카테고리 필터링
     const limited = limitAtomEntriesWithCategory(xml, maxResults, category);
-    const originalCount = limited.originalCount;
+    const totalCount = limited.totalCount;
+    const displayCount = limited.displayCount;
     xml = limited.xml;
 
-    // 엔트리 개수 확인 후 조건에 맞는 데이터가 없으면 에러 메시지 반환
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'text/xml');
-    const filteredEntries = doc.getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
-    if (filteredEntries.length === 0) {
-      return return_error({
-        code: 'NO_DATA',
-        message: '조건에 맞는 데이터가 없습니다.'
-      });
-    }
+    // xml 최상단에 <atom:mcp_info> 태그 삽입
+    const mcpInfoTag = `\n<atom:mcp_info>\n  <atom:timeUnit>us</atom:timeUnit>\n  <atom:sizeUnit>byte</atom:sizeUnit>\n  <atom:totalCount>${totalCount}</atom:totalCount>\n  <atom:displayCount>${displayCount}</atom:displayCount>\n</atom:mcp_info>\n`;
+    // xml 헤더 바로 뒤에 삽입 (헤더가 없으면 맨 앞)
+    const xmlWithInfo = xml.replace(/(<\?xml[^>]*>\s*)?/, (m) => m + mcpInfoTag);
 
     // AxiosResponse 형태로 결과 래핑 (ADT 응답값 활용)
     const response: AxiosResponse = {
@@ -61,35 +56,23 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
       statusText: adtRes.statusText,
       headers: adtRes.headers,
       config: adtRes.config,
-      data: xml,
+      data: xmlWithInfo,
     };
-    // entry 개수 정보 및 잘림 안내 추가
-    (response as any).originalEntryCount = originalCount;
-    if (trimmedNotice) {
-      (response as any).trimmedNotice = trimmedNotice;
-    }
     return return_response(response);
   } catch (error: any) {
     return handleMcpError(error);
   }
 }
 
-/**
- * XML Atom 피드에서 <atom:entry> 요소를 최대 maxCount개만 남기고 초과분은 모두 제거
- * category 파라미터가 있으면 해당 category와 일치하지 않는 entry는 제거
- * @param xmlString 원본 XML 문자열
- * @param maxCount 남길 entry 최대 개수
- * @param category category term 값 (옵션)
- * @returns { xml: string, originalCount: number }
- */
-function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, category?: string): { xml: string, originalCount: number } {
-  let originalCount = 0;
+function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, category?: string): { xml: string, totalCount: number, displayCount: number   } {
+  let totalCount = 0;
+  let displayCount = 0;
   let limitedXml = xmlString;
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const entries = doc.getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
-    originalCount = entries.length;
+    
     // category 필터링
     if (category) {
       for (let i = entries.length - 1; i >= 0; i--) {
@@ -107,7 +90,10 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
           entry.parentNode?.removeChild(entry);
         }
       }
-    }
+    }  
+    // 필터링 후 남은 entry 개수
+    totalCount = entries.length;
+
     // Remove <contributor>, <icon>, <link> elements (only the element itself, not parent)
     const atomTags = ['contributor', 'icon', 'link'];
     atomTags.forEach(tag => {
@@ -127,7 +113,10 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
         entry.parentNode?.removeChild(entry);
       }
     }
+    // 실제 보여지는 entry 개수
+    displayCount = entries.length;
+
     limitedXml = new XMLSerializer().serializeToString(doc);
   } catch { }
-  return { xml: limitedXml, originalCount };
+  return { xml: limitedXml, totalCount, displayCount };
 }
