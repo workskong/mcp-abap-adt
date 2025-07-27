@@ -1,11 +1,33 @@
+// .env 환경변수 자동 로드
+import dotenv from 'dotenv';
+dotenv.config();
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Agent } from 'https';
 import { AxiosResponse } from 'axios';
-import { getConfig, SapConfig } from '../index.js'; // getConfig needs to be exported from index.ts
+// SAP Config 타입 및 getConfig 함수 utils.ts에서 직접 정의 및 export
+export type SapConfig = {
+    url: string;
+    username: string;
+    password: string;
+    client: string;
+};
+
+// 환경변수 또는 별도 설정 파일에서 SAP 접속 정보를 가져오는 함수 예시
+export function getConfig(): SapConfig {
+    const url = process.env.SAP_URL;
+    const username = process.env.SAP_USERNAME;
+    const password = process.env.SAP_PASSWORD;
+    const client = process.env.SAP_CLIENT;
+    if (!url || !username || !password || !client) {
+        throw new Error('SAP 환경변수(SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT)가 모두 설정되어야 합니다.');
+    }
+    return { url, username, password, client };
+}
 import convert from 'xml-js';
 
-export { McpError, ErrorCode, AxiosResponse };
+export { McpError, ErrorCode };
+export type { AxiosResponse };
 
 function removeNamespace(key: string) {
     return key.replace(/^[^:]+:/, '');
@@ -50,30 +72,30 @@ export function convertXmlToJson(xmlString: string): string {
 
 export function return_response(response: AxiosResponse) {
     let responseData = response.data;
+    let content;
+    function ensureString(val: any) {
+        return typeof val === 'string' ? val : JSON.stringify(val);
+    }
     if (typeof responseData === 'string') {
         const xmlStart = responseData.indexOf('<?xml');
         if (xmlStart !== -1) {
             const xmlString = responseData.substring(xmlStart);
             const prefix = responseData.substring(0, xmlStart).trim();
             const jsonString = convertXmlToJson(xmlString);
-            return {
-                isError: false,
-                content: [
-                    ...(prefix ? [{ type: 'text', text: prefix }] : []),
-                    { type: 'text', text: jsonString }
-                ]
-            };
+            content = [
+                ...(prefix ? [{ type: 'text', text: ensureString(prefix) }] : []),
+                { type: 'text', text: ensureString(jsonString) }
+            ];
         } else if (responseData.trim().startsWith('<?xml')) {
             responseData = convertXmlToJson(responseData);
+            content = [{ type: 'text', text: ensureString(responseData) }];
+        } else {
+            content = [{ type: 'text', text: ensureString(responseData) }];
         }
+    } else {
+        content = [{ type: 'text', text: ensureString(responseData) }];
     }
-    return {
-        isError: false,
-        content: [{
-            type: 'text',
-            text: responseData
-        }]
-    };
+    return { isError: false, content };
 }
 
 export function return_error(error: any) {
@@ -131,6 +153,9 @@ export async function getBaseUrl() {
         config = getConfig();
     }
     const { url } = config;
+    if (!/^https?:\/\/.+/.test(url)) {
+        throw new Error(`SAP_URL 환경변수가 올바른 URL 형식이 아닙니다: ${url}`);
+    }
     try {
         const urlObj = new URL(url);
         const baseUrl = urlObj.origin;

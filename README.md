@@ -80,17 +80,45 @@ npm test
 
 ## 📖 API 레퍼런스
 
-### DDIC 조회 도구
 
-| API                | 기능            | 필수 파라미터     | 사용 예시                                     |
-|--------------------------|----------------------|---------------------|---------------------------------------------------|
-| GetDDICStructure         | 구조체 정의 조회     | object_name         | `{"object_name": "SFLIGHT"}`                      |
-| GetDDICTable             | 테이블 구조 분석     | object_name         | `{"object_name": "MARA"}`                         |
-| GetDDICCDS               | CDS 뷰 정의          | object_name         | `{"object_name": "I_Product"}`                    |
-| GetDDICDataElement       | 데이터 요소 정보     | object_name         | `{"object_name": "MATNR"}`                        |
-| GetDDICDataElements      | 데이터 요소 상세     | object_name         | `{"object_name": "MATNR"}`                        |
-| GetDDICDomain            | 도메인 상세 정보     | object_name         | `{"object_name": "CHAR10"}`                       |
-| GetDDICTypeInfo          | 타입 상세 정보       | object_name         | `{"object_name": "TYPE_NAME"}`                    |
+### DDIC/데이터 도구
+
+| API                   | 기능                  | 파라미터/필수값           | 예시 |
+|-----------------------|-----------------------|---------------------------|------|
+| GetDDIC_Structure     | 스트럭쳐 정의 조회    | object_name               | `{ "object_name": "SFLIGHT" }` |
+| GetDDIC_Table         | 테이블 정의 조회      | object_name               | `{ "object_name": "MARA" }` |
+| GetDDIC_CDS           | CDS 뷰 정의 조회      | object_name               | `{ "object_name": "I_Product" }` |
+| GetDDIC_DataElements  | 데이터 엘리먼트 조회  | object_name               | `{ "object_name": "MATNR" }` |
+| GetDDIC_Domains       | 도메인 정의 조회      | object_name               | `{ "object_name": "CHAR10" }` |
+| GetDDIC_TypeInfo      | 타입 정보 조회        | object_name               | `{ "object_name": "TYPE_NAME" }` |
+| DataPreview           | 데이터 프리뷰         | ddicEntityName, rowNumber | `{ "ddicEntityName": "SFLIGHT", "rowNumber": 10 }` |
+
+### 개발 오브젝트 도구
+
+| API                | 기능                   | 파라미터/필수값                      | 예시 |
+|--------------------|------------------------|--------------------------------------|------|
+| Get_Program        | 프로그램 소스 조회     | program_name                         | `{ "program_name": "RSUSR003" }` |
+| Get_Class          | 클래스 소스 조회       | class_name                            | `{ "class_name": "CL_HTTP_CLIENT" }` |
+| Get_Function       | 펑션 모듈 소스 조회    | function_name, function_group         | `{ "function_name": "RFC_READ_TABLE", "function_group": "SRFC" }` |
+| Get_FunctionGroup  | 펑션 그룹 소스 조회    | function_group                        | `{ "function_group": "SRFC" }` |
+| Get_Include        | 인클루드 소스 조회     | include_name                          | `{ "include_name": "LZPROGRAMU01" }` |
+| Get_Interface      | 인터페이스 소스 조회   | interface_name                        | `{ "interface_name": "IF_HTTP_CLIENT" }` |
+| Get_MessageClass   | 메시지 클래스 정보     | MessageClass                          | `{ "MessageClass": "ZMSG" }` |
+| Get_Package        | 패키지 상세 정보 조회  | package_name                          | `{ "package_name": "ZPACK" }` |
+| Get_Transaction    | 트랜잭션 상세 정보     | transaction_name                      | `{ "transaction_name": "SE11" }` |
+| API_Releases       | API Release 정보       | query                                 | `{ "query": "CL_HTTP_CLIENT" }` |
+
+### 분석/검색/트레이스/덤프 도구
+
+| API                   | 기능                       | 파라미터/필수값                      | 예시 |
+|-----------------------|----------------------------|--------------------------------------|------|
+| SearchObject          | 오브젝트 검색              | query, maxResults                    | `{ "query": "CL_HTTP*", "maxResults": 10 }` |
+| GetWhereUsed          | 사용처 분석                | object_name, object_type, max_results | `{ "object_name": "MATNR", "object_type": "DATA_ELEMENT" }` |
+| Get_ABAPTraces        | ABAP Trace(성능) 조회      | user, maxResults                     | `{ "user": "DEV00", "maxResults": 5 }` |
+| Get_ABAPTracesDetails | ABAP Trace 상세 조회       | id, type                             | `{ "id": "123", "type": "statements" }` |
+| GetRuntimeDumpDetails | 런타임 덤프 상세 조회      | id                                   | `{ "id": "DUMP_ID" }` |
+| GetRuntimeDumps       | 런타임 덤프 리스트 조회     | start_date, end_date, ...            | `{ "start_date": "2025-07-01" }` |
+
 
 
 ### 개발 오브젝트 도구
@@ -119,9 +147,10 @@ npm test
 | 카테고리    | 지원 타입                                                           |
 |-------------|---------------------------------------------------------------------|
 | 핵심 개발   | CLASS, INTERFACE, PROGRAM, FUNCTION, INCLUDE                        |
-| 데이터 관리 | TABLE, STRUCTURE, VIEW, CDS_VIEW, DOMAIN                            |
+| 데이터 관리 | TABLE, STRUCTURE, VIEW, CDS_VIEW, DOMAIN, DATA_ELEMENT, TYPE        |
 | 고급 기능   | ENHANCEMENT, AMDP, TRANSFORMATION, SEARCH_HELP                      |
 | 코드 요소   | METHOD, ATTRIBUTE, FORM, VARIABLE, PARAMETER                        |
+
 
 ---
 

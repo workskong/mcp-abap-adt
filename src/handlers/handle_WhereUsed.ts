@@ -1,5 +1,5 @@
-import { McpError, ErrorCode, AxiosResponse } from '../lib/utils.js';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils.js';
+import { McpError, ErrorCode, AxiosResponse } from '../lib/utils';
+import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
 
 interface GetWhereUsedArgs {
     object_name: string;

@@ -2,13 +2,14 @@
   "name": "@orchestraight.co/mcp-abap-adt",
   "version": "1.1.1",
   "description": "ABAP ADT (ABAP Development Tools) MCP Server for interacting with SAP systems",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "build": "tsc -p tsconfig.json",
-    "start": "node ./dist/index.js",
-    "dev": "npx @modelcontextprotocol/inspector node ./dist/index.js"
+    "start": "node ./dist/src/index.js",
+    "dev": "npx @modelcontextprotocol/inspector node ./dist/index.js",
+    "create:test": "node scripts/createTest.js"
   },
   "keywords": [
     "abap",
@@ -32,13 +33,14 @@
     "@types/xml2js": "^0.4.14",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.4.5"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.4.1",
     "axios": "^1.7.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
     "xml-js": "^1.6.11",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0"
   }
 }

@@ -1,8 +1,8 @@
-import { McpError, ErrorCode } from '../lib/utils.js';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils.js';
+import { McpError, ErrorCode } from '../lib/utils';
+import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
 
 // 검색 → uri 추출 → 인코딩 → apireleases 조회 방식
-export async function handel_API_Releases(args: { query: string; maxResults?: number }) {
+export async function handle_API_Releases(args: { query: string; maxResults?: number }) {
 
   try {
     if (!args?.query) {

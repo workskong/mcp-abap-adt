@@ -2,10 +2,11 @@ module.exports = {
   preset: 'ts-jest/presets/default-esm', // ESM + TypeScript 지원
   testEnvironment: 'node',
   testMatch: [
-    '**/tests/**/*.test.ts',
-    '**/src/**/*.test.ts'
+    '<rootDir>/tests/**/*.test.ts'
   ],
-  transform: {},
+  transform: {
+    '^.+\\.ts$': 'ts-jest'
+  },
   extensionsToTreatAsEsm: ['.ts'],
   globals: {
     'ts-jest': {
@@ -14,5 +15,6 @@ module.exports = {
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
-  }
+  },
+  moduleDirectories: ['node_modules', 'src']
 };

@@ -1,5 +1,5 @@
-import { McpError, ErrorCode, convertXmlToJson } from '../lib/utils.js';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils.js';
+import { McpError, ErrorCode } from '../lib/utils';
+import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
 
 interface GetPackageArgs {
   package_name: string;
@@ -19,12 +19,7 @@ export async function handleGetPackage(args: GetPackageArgs) {
     };
 
     const package_structure_response = await makeAdtRequest(nodeContentsUrl, 'POST', 30000, nodeContentsParams);
-
-    // XML → JSON 변환 및 단순화 (utils 함수 활용)
-    const jsonString = convertXmlToJson(package_structure_response.data);
-
-    // 일관된 포맷으로 반환
-    return return_response({ data: jsonString } as any);
+    return return_response({ data: package_structure_response.data } as any);
 
   } catch (error) {
     return return_error(error);
