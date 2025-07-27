@@ -12,7 +12,7 @@ export async function handle_Get_MessageClass(args: MessageClassArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Message Class name is required');
     }
 
-    const url = `http://203.229.171.207:50000/sap/bc/adt/messageclass/${messageClass}`;
+    const url = `${await getBaseUrl()}/sap/bc/adt/messageclass/${messageClass}`;
     const response = await makeAdtRequest(url, 'GET', 30000);
 
     return return_response(response);
