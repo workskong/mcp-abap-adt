@@ -1,13 +1,15 @@
+
 import * as handlers from './handlers/index';
 
+// All handler descriptions and comments are translated to English below
 export const toolDefinitions = [
   // API_Releases
   {
     name: 'API_Releases',
-    description: 'ADT 오브젝트의 API Release 정보를 조회',
+    description: 'Retrieve API Release information for an ADT object',
     inputSchema: {
       type: 'object',
-      properties: { query: { type: 'string', description: 'ADT 오브젝트 검색 쿼리(예: SBOOK, C_GREGORIANCALSGLDATEFUNCVH 등)' } },
+      properties: { query: { type: 'string', description: 'ADT object search query (e.g. SBOOK, C_GREGORIANCALSGLDATEFUNCVH)' } },
       required: ['query']
     },
     handler: handlers.handle_API_Releases.handle_API_Releases
@@ -15,12 +17,12 @@ export const toolDefinitions = [
   // DataPreview
   {
     name: 'DataPreview',
-    description: 'ABAP 데이터 프리뷰 조회',
+    description: 'Preview ABAP data for a DDIC entity',
     inputSchema: {
       type: 'object',
       properties: {
-        ddicEntityName: { type: 'string', description: 'DDIC 엔티티명' },
-        rowNumber: { type: 'number', description: '조회 행 수', default: 100 }
+        ddicEntityName: { type: 'string', description: 'DDIC entity name' },
+        rowNumber: { type: 'number', description: 'Number of rows to retrieve', default: 100 }
       },
       required: ['ddicEntityName']
     },
@@ -29,7 +31,7 @@ export const toolDefinitions = [
   // DDIC_CDS
   {
     name: 'GetDDIC_CDS',
-    description: 'CDS 뷰 정의를 조회',
+    description: 'Retrieve CDS view definition',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'CDS view name' } },
@@ -40,7 +42,7 @@ export const toolDefinitions = [
   // DDIC_DataElements
   {
     name: 'GetDDIC_DataElements',
-    description: '데이터 엘리먼트 정의를 조회',
+    description: 'Retrieve data element definition',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Data element name' } },
@@ -51,7 +53,7 @@ export const toolDefinitions = [
   // DDIC_Domains
   {
     name: 'GetDDIC_Domains',
-    description: '도메인 정의를 조회',
+    description: 'Retrieve domain definition',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Domain name' } },
@@ -62,7 +64,7 @@ export const toolDefinitions = [
   // DDIC_Structure
   {
     name: 'GetDDIC_Structure',
-    description: '스트럭쳐 정의를 조회',
+    description: 'Retrieve structure definition',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'DDIC structure name' } },
@@ -73,7 +75,7 @@ export const toolDefinitions = [
   // DDIC_Table
   {
     name: 'GetDDIC_Table',
-    description: '테이블 정의를 조회',
+    description: 'Retrieve table definition',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'Table name' } },
@@ -84,7 +86,7 @@ export const toolDefinitions = [
   // DDIC_TypeInfo
   {
     name: 'GetDDIC_TypeInfo',
-    description: '타입 정보를 조회',
+    description: 'Retrieve DDIC type information',
     inputSchema: {
       type: 'object',
       properties: { object_name: { type: 'string', description: 'DDIC type name' } },
@@ -95,7 +97,7 @@ export const toolDefinitions = [
   // Get_ABAPTraces
   {
     name: 'Get_ABAPTraces',
-    description: 'ABAP Trace (성능) 정보를 조회',
+    description: 'Retrieve ABAP Trace (performance) information',
     inputSchema: {
       type: 'object',
       properties: {
@@ -110,7 +112,7 @@ export const toolDefinitions = [
   // Get_ABAPTracesDetails
   {
     name: 'Get_ABAPTracesDetails',
-    description: 'ABAP Trace 상세 정보를 조회',
+    description: 'Retrieve detailed ABAP Trace information',
     inputSchema: {
       type: 'object',
       properties: {
@@ -124,7 +126,7 @@ export const toolDefinitions = [
   // Get_Class
   {
     name: 'Get_Class',
-    description: 'ABAP 클래스 소스코드를 조회',
+    description: 'Retrieve ABAP class source code',
     inputSchema: {
       type: 'object',
       properties: { class_name: { type: 'string', description: 'Class name' } },
@@ -135,7 +137,7 @@ export const toolDefinitions = [
   // Get_Function
   {
     name: 'Get_Function',
-    description: 'ABAP 펑션 모듈 소스코드를 조회',
+    description: 'Retrieve ABAP function module source code',
     inputSchema: {
       type: 'object',
       properties: {
@@ -149,7 +151,7 @@ export const toolDefinitions = [
   // Get_FunctionGroup
   {
     name: 'Get_FunctionGroup',
-    description: 'ABAP 펑션 그룹 소스코드를 조회',
+    description: 'Retrieve ABAP function group source code',
     inputSchema: {
       type: 'object',
       properties: { function_group: { type: 'string', description: 'Function group name' } },
@@ -160,7 +162,7 @@ export const toolDefinitions = [
   // Get_Include
   {
     name: 'Get_Include',
-    description: 'ABAP 인클루드 소스코드를 조회',
+    description: 'Retrieve ABAP include source code',
     inputSchema: {
       type: 'object',
       properties: { include_name: { type: 'string', description: 'Include name' } },
@@ -171,7 +173,7 @@ export const toolDefinitions = [
   // Get_Interface
   {
     name: 'Get_Interface',
-    description: 'ABAP 인터페이스 소스코드를 조회',
+    description: 'Retrieve ABAP interface source code',
     inputSchema: {
       type: 'object',
       properties: { interface_name: { type: 'string', description: 'Interface name' } },
@@ -182,7 +184,7 @@ export const toolDefinitions = [
   // Get_MessageClass
   {
     name: 'Get_MessageClass',
-    description: 'ABAP 메시지 클래스 정보를 조회',
+    description: 'Retrieve ABAP message class information',
     inputSchema: {
       type: 'object',
       properties: { MessageClass: { type: 'string', description: 'Message class name' } },
@@ -193,7 +195,7 @@ export const toolDefinitions = [
   // Get_Package
   {
     name: 'Get_Package',
-    description: 'ABAP 패키지 상세 정보를 조회',
+    description: 'Retrieve ABAP package details',
     inputSchema: {
       type: 'object',
       properties: { package_name: { type: 'string', description: 'Package name' } },
@@ -204,7 +206,7 @@ export const toolDefinitions = [
   // Get_Program
   {
     name: 'Get_Program',
-    description: 'ABAP 프로그램 소스코드를 조회',
+    description: 'Retrieve ABAP program source code',
     inputSchema: {
       type: 'object',
       properties: { program_name: { type: 'string', description: 'Program name' } },
@@ -215,7 +217,7 @@ export const toolDefinitions = [
   // Get_Transaction
   {
     name: 'Get_Transaction',
-    description: 'ABAP 트랜잭션 상세 정보를 조회',
+    description: 'Retrieve ABAP transaction details',
     inputSchema: {
       type: 'object',
       properties: { transaction_name: { type: 'string', description: 'Transaction name' } },
@@ -226,11 +228,11 @@ export const toolDefinitions = [
   // RuntimeDumpDetails
   {
     name: 'GetRuntimeDumpDetails',
-    description: 'ABAP 런타임 덤프 상세 정보를 조회',
+    description: 'Retrieve detailed ABAP runtime dump information',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: '런타임 덤프 id(알려진 경우)' }
+        id: { type: 'string', description: 'Runtime dump id (if known)' }
       },
       required: ['id']
     },
@@ -239,16 +241,16 @@ export const toolDefinitions = [
   // RuntimeDumps
   {
     name: 'GetRuntimeDumps',
-    description: 'ABAP 런타임 덤프 리스트를 조회',
+    description: 'Retrieve ABAP runtime dump list',
     inputSchema: {
       type: 'object',
       properties: {
-        start_date: { type: 'string', description: '시작 날짜(YYYY-MM-DD 또는 YYYYMMDD)' },
-        end_date: { type: 'string', description: '종료 날짜(YYYY-MM-DD 또는 YYYYMMDD)' },
-        start_time: { type: 'string', description: '시작 시간(00:00:00 또는 000000, 기본값 000000)' },
-        end_time: { type: 'string', description: '종료 시간(00:00:00 또는 235959, 기본값 235959)' },
-        category: { type: 'string', description: '카테고리 필터링' },
-        maxResults: { type: 'number', description: '최대 결과 수', default: 5 }
+        start_date: { type: 'string', description: 'Start date (YYYY-MM-DD or YYYYMMDD)' },
+        end_date: { type: 'string', description: 'End date (YYYY-MM-DD or YYYYMMDD)' },
+        start_time: { type: 'string', description: 'Start time (00:00:00 or 000000, default 000000)' },
+        end_time: { type: 'string', description: 'End time (00:00:00 or 235959, default 235959)' },
+        category: { type: 'string', description: 'Category filter' },
+        maxResults: { type: 'number', description: 'Max results', default: 5 }
       },
       required: ['start_date']
     },
@@ -257,7 +259,7 @@ export const toolDefinitions = [
   // SearchObject
   {
     name: 'SearchObject',
-    description: 'ABAP 오브젝트를 검색',
+    description: 'Search for ABAP objects',
     inputSchema: {
       type: 'object',
       properties: {
@@ -271,7 +273,7 @@ export const toolDefinitions = [
   // GetWhereUsed
   {
     name: 'GetWhereUsed',
-    description: 'ABAP 오브젝트의 참조 및 사용처를 조회',
+    description: 'Retrieve references and usage locations for an ABAP object',
     inputSchema: {
       type: 'object',
       properties: {
