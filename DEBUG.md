@@ -1,38 +1,119 @@
-# Debug Guide for HTTP 500 Error
 
-## Issue Description
-You encountered an HTTP 500 error when trying to access the "sbook" object:
+# Debug & Troubleshooting Guide
+
+This guide explains how to debug issues, interpret errors, and troubleshoot the MCP ABAP ADT Server. It reflects the latest project structure and best practices as of August 2025.
+
+---
+
+## 1. Environment & Configuration
+
+- All SAP connection details are loaded from environment variables using the `.env` file and the `dotenv` package.
+- Required variables:
+  - `SAP_URL` (e.g., https://your-sap-system.com:8000)
+  - `SAP_USERNAME`
+  - `SAP_PASSWORD`
+  - `SAP_CLIENT`
+- If any variable is missing, the server will throw a clear error at startup.
+
+**Example `.env` file:**
 ```
-HTTP error 500: {"detail":{"message":"Unexpected error","error":"500: {'message': 'Error: undefined'}"}}
+SAP_URL=https://your-sap-system.com:8000
+SAP_USERNAME=your_username
+SAP_PASSWORD=your_password
+SAP_CLIENT=100
 ```
 
-## Fixes Applied
+---
 
-### 1. Fixed getBaseUrl() Function
-**Problem**: The `getBaseUrl()` function in `src/lib/utils.ts` was incorrectly using `Buffer.from()` to convert the URL origin to a Buffer, which caused the "undefined" error.
+## 2. Error Handling & Logging
 
-**Fix**: Changed line 67 in `src/lib/utils.ts`:
-```typescript
-// Before
-const baseUrl = Buffer.from(`${urlObj.origin}`);
+- All API and handler errors are caught and returned in a standardized format using the `return_error()` utility.
+- HTTP and ADT request errors include status codes and response data for easier diagnosis.
+- Console logging is used throughout the codebase to trace request URLs, endpoints tried, and error details (see `src/lib/utils.ts` and handler files).
+- When an error occurs, check the server console for detailed logs, including endpoint URLs and error messages.
 
-// After  
-const baseUrl = urlObj.origin;
+**Example error response:**
+```
+{
+  "isError": true,
+  "content": [
+    { "type": "text", "text": "Error: HTTP 500: { ... }" }
+  ]
+}
 ```
 
-### 2. Enhanced Error Handling
-**Improvements**:
-- Better error message formatting in `return_error()` function
-- Added null safety for `response.data` in `return_response()` function
-- Enhanced logging in `makeAdtRequest()` function
-- Added configuration validation with detailed error messages
+---
 
-### 3. Added Debug Logging
-- Added console logging to track request URLs and responses
-- Enhanced error logging to identify specific failure points
-- Added configuration validation logging
+## 3. Debugging Steps
 
-## How to Debug
+### A. Enable Debug Logging
+
+Set the following environment variables before starting the server to enable verbose debug output:
+```
+set DEBUG=mcp-abap-adt:*
+set LOG_LEVEL=debug
+```
+On Linux/macOS, use `export` instead of `set`.
+
+### B. Run Tests
+
+- Use `npm test` to run all Jest-based tests in the `tests/` directory.
+- To generate a new test file, use the script:
+  ```
+  npm run create:test <TestName>
+  ```
+  This creates a template in `tests/<TestName>.test.ts`.
+
+### C. Common Issues & Solutions
+
+| Issue                                 | Solution                                                      |
+|---------------------------------------|---------------------------------------------------------------|
+| Missing required environment variable | Check your `.env` file and ensure all variables are set        |
+| Invalid URL in configuration          | Ensure `SAP_URL` is a valid URL (starts with http/https)      |
+| HTTP 401 Unauthorized                 | Check your SAP credentials and client number                   |
+| HTTP 404 Not Found                    | The object may not exist or you lack access                    |
+| HTTP 500 Internal Server Error        | Check SAP system logs, permissions, and try with known object  |
+| ADT service unavailable               | Ensure `/sap/bc/adt` is enabled on your SAP system             |
+
+---
+
+## 4. Debugging ABAP Object Access
+
+If you encounter errors accessing an ABAP object (e.g., table, structure, etc.):
+
+- Use the appropriate handler/tool for the object type:
+  - For tables:
+    ```json
+    { "name": "GetDDICTable", "arguments": { "object_name": "SBOOK" } }
+    ```
+  - For structures:
+    ```json
+    { "name": "GetDDICStructure", "arguments": { "object_name": "SBOOK" } }
+    ```
+  - For search:
+    ```json
+    { "name": "SearchObject", "arguments": { "query": "SBOOK" } }
+    ```
+
+---
+
+## 5. Advanced Debugging
+
+- Add `console.log` statements in handler or utility files to trace values and flow.
+- Use the verbose debug mode as described above.
+- Test with different SAP objects to isolate the issue.
+- Check SAP system logs for server-side errors.
+- Verify network connectivity to your SAP system.
+
+---
+
+## 6. Additional Notes
+
+- All handler logic is modularized in `src/handlers/` and registered in `src/toolDefinitions.ts`.
+- Utility functions for requests, error formatting, and config are in `src/lib/utils.ts`.
+- The project uses Jest for testing and includes a script for generating test templates.
+
+For further help, review the README or open an issue on GitHub.
 
 ### 1. Run the Debug Script
 ```bash
