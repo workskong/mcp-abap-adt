@@ -1,6 +1,6 @@
 {
   "name": "@orchestraight.co/mcp-abap-adt",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "ABAP ADT (ABAP Development Tools) MCP Server for interacting with SAP systems",
   "main": "dist/src/index.js",
   "types": "dist/index.d.ts",
