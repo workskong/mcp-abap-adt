@@ -13,7 +13,7 @@ export class mcp_abap_adt_server {
   constructor() {
     this.sapConfig = getConfig();
     this.server = new Server(
-      { name: 'mcp-abap-adt', version: '1.1.1' },
+      { name: 'mcp-abap-adt', version: '1.2.0' },
       { capabilities: { tools: {} } }
     );
     this.setupHandlers();
