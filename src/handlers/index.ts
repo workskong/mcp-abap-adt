@@ -17,7 +17,6 @@ export * as handle_Get_Transaction from './handle_Get_Transaction';
 export * as handle_RuntimeDumpDetails from './handle_RuntimeDumpDetails';
 export * as handle_RuntimeDumps from './handle_RuntimeDumps';
 export * as handle_SearchObject from './handle_SearchObject';
-export * as handle_WhereUsed from './handle_WhereUsed';
 export * as handle_Get_ABAPTraces from './handle_Get_ABAPTraces';
 export * as handle_Get_ABAPTracesDetails from './handle_Get_ABAPTracesDetails';
 export * as handle_Get_MessageClass from './handle_Get_MessageClass';

@@ -2,17 +2,16 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getConfig, return_error, type SapConfig } from './src/lib/utils';
+import { return_error, type SapConfig } from './src/lib/utils';
 import { toolDefinitions } from './src/toolDefinitions';
 
 // === MCP 서버 클래스 ===
 export class mcp_abap_adt_server {
   private server: Server;
-  private sapConfig: SapConfig;
+  private sapConfig?: SapConfig;
 
   constructor() {
-    this.sapConfig = getConfig();
-    this.server = new Server(
+  this.server = new Server(
       { name: 'mcp-abap-adt', version: '1.2.0' },
       { capabilities: { tools: {} } }
     );
@@ -63,4 +62,31 @@ export class mcp_abap_adt_server {
 }
 
 const server = new mcp_abap_adt_server();
-server.run().catch(() => process.exit(1));
+// If started with --remote, run an HTTP wrapper that exposes the tools over HTTP
+if (process.argv.includes('--remote')) {
+  // lazy import to avoid pulling Express when not needed
+  import('./src/remoteServer.js').then(mod => {
+    mod.startRemoteServer(toolDefinitions).then(() => {
+      // Keep the process alive for remote server mode
+      console.log('Remote server started successfully. Press Ctrl+C to stop.');
+    }).catch((err: any) => {
+      // keep error formatting consistent with return_error
+      // eslint-disable-next-line no-console
+      console.error('Failed to start remote server:', err && err.message ? err.message : err);
+      process.exit(1);
+    });
+  }).catch(err => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load remote server module:', err);
+    process.exit(1);
+  });
+} else {
+  server.run().catch((err: any) => {
+    // Log the error so failures during startup/connect are visible to callers.
+    // Previously the error was swallowed which can cause the client to wait for `initialize`.
+    // Keep exit behavior but surface the underlying issue.
+    // eslint-disable-next-line no-console
+    console.error('Failed to start MCP server:', err && err.message ? err.message : err);
+    process.exit(1);
+  });
+}

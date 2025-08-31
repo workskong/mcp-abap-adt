@@ -2,9 +2,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Agent } from 'https';
-import { AxiosResponse } from 'axios';
 // SAP Config 타입 및 getConfig 함수 utils.ts에서 직접 정의 및 export
 export type SapConfig = {
     url: string;
@@ -58,14 +57,39 @@ function simplifyXmlJson(obj: any): any {
 
 export function convertXmlToJson(xmlString: string): string {
     try {
-        const jsonData = convert.xml2js(xmlString, {
+        // Clean up the XML string - remove any leading/trailing whitespace and check for valid XML
+        const cleanXml = xmlString.trim();
+        
+        // Check if it's actually XML
+        if (!cleanXml.startsWith('<?xml') && !cleanXml.startsWith('<')) {
+            console.warn('Input does not appear to be valid XML, returning as-is');
+            return cleanXml;
+        }
+        
+        // Find the end of the XML declaration and the start of the root element
+        const xmlDeclMatch = cleanXml.match(/^<\?xml[^>]*\?>\s*/);
+        let xmlContent = cleanXml;
+        
+        if (xmlDeclMatch) {
+            const afterDeclaration = cleanXml.substring(xmlDeclMatch[0].length);
+            // Check if there's a valid root element after the declaration
+            if (afterDeclaration.trim().startsWith('<')) {
+                xmlContent = cleanXml;
+            } else {
+                console.warn('No valid root element found after XML declaration');
+                return cleanXml;
+            }
+        }
+        
+    // NOTE: Do not remove or modify <atom:id> prefixes — keep original ADT dump IDs intact
+    const jsonData = convert.xml2js(xmlContent, {
             compact: true,
             ignoreAttributes: false
         });
         const simplifiedData = simplifyXmlJson(jsonData);
         return JSON.stringify(simplifiedData, null, 2);
     } catch (error: any) {
-        console.error('XML to JSON conversion failed:', error?.message || 'Unknown error');
+        console.warn('XML to JSON conversion failed, returning original content:', error?.message || 'Unknown error');
         return xmlString;
     }
 }
@@ -95,12 +119,21 @@ export function return_response(response: AxiosResponse) {
     } else {
         content = [{ type: 'text', text: ensureString(responseData) }];
     }
+    // Normalize content to always be an array for downstream/tool consumers
+    if (!Array.isArray(content)) {
+        content = (content !== undefined && content !== null) ? [content] : [];
+    }
     return { isError: false, content };
 }
 
 export function return_error(error: any) {
     let errorMessage = 'Unknown error';
-    if (error instanceof AxiosError) {
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error instanceof McpError) {
+        errorMessage = error.message;
+        errorCode = String(error.code);
+    } else if (error instanceof AxiosError) {
         if (error.response?.data) {
             errorMessage = `HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`;
         } else if (error.message) {
@@ -108,15 +141,24 @@ export function return_error(error: any) {
         } else {
             errorMessage = `HTTP Error: ${error.code || 'Unknown'}`;
         }
+        errorCode = 'HTTP_ERROR';
     } else if (error instanceof Error) {
         errorMessage = error.message;
+        errorCode = 'GENERIC_ERROR';
     } else if (typeof error === 'string') {
         errorMessage = error;
+    } else if (typeof error === 'object' && error !== null) {
+        errorMessage = JSON.stringify(error);
     } else {
         errorMessage = String(error);
     }
+    
     return {
         isError: true,
+        error: {
+            code: errorCode,
+            message: errorMessage
+        },
         content: [{
             type: 'text',
             text: `Error: ${errorMessage}`
@@ -136,13 +178,7 @@ export function createAxiosInstance() {
     return axiosInstance;
 }
 
-// Cleanup function for tests
-export function cleanup() {
-    axiosInstance = null;
-    config = undefined;
-    csrfToken = null;
-    cookies = null;
-}
+// (removed) cleanup() used only previously for tests — not referenced elsewhere in the project
 
 let config: SapConfig | undefined;
 let csrfToken: string | null = null;
@@ -215,7 +251,7 @@ export async function makeAdtRequest(
     method: string,
     timeout: number,
     data?: any,
-    params?: any,
+    customHeaders?: Record<string, string>,
     responseType: 'text' | 'json' = 'json'
 ) {
     if ((method === 'POST' || method === 'PUT') && !csrfToken) {
@@ -226,7 +262,8 @@ export async function makeAdtRequest(
         }
     }
     const requestHeaders = {
-        ...(await getAuthHeaders())
+        ...(await getAuthHeaders()),
+        ...(customHeaders || {})
     };
     if ((method === 'POST' || method === 'PUT') && csrfToken) {
         requestHeaders['x-csrf-token'] = csrfToken;
@@ -234,13 +271,22 @@ export async function makeAdtRequest(
     if (cookies) {
         requestHeaders['Cookie'] = cookies;
     }
+    // URL이 이미 퍼센트 인코딩된 경우를 처리하기 위해 axios 설정 조정
     const config: AxiosRequestConfig = {
         method,
         url,
         headers: requestHeaders,
         timeout,
-        params: params,
-        responseType
+        responseType,
+        // URL이 이미 인코딩되어 있는 경우 추가 인코딩을 방지
+        validateStatus: function (status) {
+            return status < 500; // 500 이하는 reject하지 않음
+        },
+        // axios의 내부 URL 파싱을 우회하기 위해 transformRequest 사용
+        transformRequest: [(data, headers) => {
+            // URL이 이미 올바르게 인코딩되어 있으므로 그대로 사용
+            return data;
+        }]
     };
     if (data) {
         config.data = data;
@@ -257,7 +303,6 @@ export async function makeAdtRequest(
                 url,
                 headers: { ...requestHeaders, 'x-csrf-token': csrfToken },
                 timeout,
-                params: params,
                 ...(data && { data }),
                 responseType
             };

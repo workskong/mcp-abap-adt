@@ -269,20 +269,5 @@ export const toolDefinitions = [
       required: ['query']
     },
     handler: handlers.handle_SearchObject.handleSearchObject
-  },
-  // GetWhereUsed
-  {
-    name: 'GetWhereUsed',
-    description: 'Retrieve references and usage locations for an ABAP object',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        object_name: { type: 'string', description: 'Object name' },
-        object_type: { type: 'string', description: 'Object type' },
-        max_results: { type: 'number', description: 'Max results', default: 100 }
-      },
-      required: ['object_name']
-    },
-    handler: handlers.handle_WhereUsed.handleGetWhereUsed
   }
 ];
