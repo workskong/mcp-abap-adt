@@ -1,7 +1,7 @@
 {
   "name": "@orchestraight.co/mcp-abap-adt",
-  "version": "1.2.0",
-  "description": "ABAP ADT (ABAP Development Tools) MCP Server for interacting with SAP systems",
+  "version": "1.3.0",
+  "description": "MCP server for SAP ABAP ADT: unified access to ABAP metadata, source code, and diagnostics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -16,13 +16,20 @@
     "sap",
     "adt",
     "mcp",
-    "model-context-protocol"
+    "model-context-protocol",
+    "server",
+    "sse",
+    "metadata",
+    "repository",
+    "docker",
+    "typescript"
   ],
-  "author": "orchestraight.co",
+  "author": "orchestraight.co, maintained by workskong",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/workskong/mcp-abap-adt.git"
+    "url": "https://github.com/workskong/mcp-abap-adt.git",
+    "directory": "."
   },
   "publishConfig": {
     "access": "public"

@@ -1,10 +1,10 @@
-// .env 환경변수 자동 로드
+// Automatically load .env environment variables
 import dotenv from 'dotenv';
 dotenv.config();
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Agent } from 'https';
-// SAP Config 타입 및 getConfig 함수 utils.ts에서 직접 정의 및 export
+// Define and export SAP Config type and getConfig function directly in utils.ts
 export type SapConfig = {
     url: string;
     username: string;
@@ -12,14 +12,14 @@ export type SapConfig = {
     client: string;
 };
 
-// 환경변수 또는 별도 설정 파일에서 SAP 접속 정보를 가져오는 함수 예시
-export function getConfig(): SapConfig {
+// Example function to get SAP connection information from environment variables or a separate config file
+export function getConfig(sapUsername?: string, sapPassword?: string): SapConfig {
     const url = process.env.SAP_URL;
-    const username = process.env.SAP_USERNAME;
-    const password = process.env.SAP_PASSWORD;
+    const username = sapUsername || process.env.SAP_USERNAME;
+    const password = sapPassword || process.env.SAP_PASSWORD;
     const client = process.env.SAP_CLIENT;
     if (!url || !username || !password || !client) {
-        throw new Error('SAP 환경변수(SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT)가 모두 설정되어야 합니다.');
+        throw new Error('All SAP environment variables (SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT) must be set.');
     }
     return { url, username, password, client };
 }
@@ -184,13 +184,21 @@ let config: SapConfig | undefined;
 let csrfToken: string | null = null;
 let cookies: string | null = null; // Variable to store cookies
 
-export async function getBaseUrl() {
-    if (!config) {
-        config = getConfig();
+export async function getBaseUrl(sapUsername?: string, sapPassword?: string) {
+    let currentConfig: SapConfig;
+    
+    if (sapUsername && sapPassword) {
+        currentConfig = getConfig(sapUsername, sapPassword);
+    } else {
+        if (!config) {
+            config = getConfig();
+        }
+        currentConfig = config;
     }
-    const { url } = config;
+    
+    const { url } = currentConfig;
     if (!/^https?:\/\/.+/.test(url)) {
-        throw new Error(`SAP_URL 환경변수가 올바른 URL 형식이 아닙니다: ${url}`);
+        throw new Error(`SAP_URL environment variable is not a valid URL format: ${url}`);
     }
     try {
         const urlObj = new URL(url);
@@ -202,11 +210,21 @@ export async function getBaseUrl() {
     }
 }
 
-export async function getAuthHeaders() {
-    if (!config) {
-        config = getConfig();
+export async function getAuthHeaders(sapUsername?: string, sapPassword?: string) {
+    let currentConfig: SapConfig;
+    
+    if (sapUsername && sapPassword) {
+    // Use authentication information provided by the client
+        currentConfig = getConfig(sapUsername, sapPassword);
+    } else {
+    // Use default configuration
+        if (!config) {
+            config = getConfig();
+        }
+        currentConfig = config;
     }
-    const { username, password, client } = config;
+    
+    const { username, password, client } = currentConfig;
     const auth = Buffer.from(`${username}:${password}`).toString('base64'); // Create Basic Auth string
     return {
         'Authorization': `Basic ${auth}`,
@@ -214,13 +232,13 @@ export async function getAuthHeaders() {
     };
 }
 
-async function fetchCsrfToken(url: string): Promise<string> {
+async function fetchCsrfToken(url: string, sapUsername?: string, sapPassword?: string): Promise<string> {
     try {
         const response = await createAxiosInstance()({
             method: 'GET',
             url,
             headers: {
-                ...(await getAuthHeaders()),
+                ...(await getAuthHeaders(sapUsername, sapPassword)),
                 'x-csrf-token': 'fetch'
             }
         });
@@ -252,17 +270,19 @@ export async function makeAdtRequest(
     timeout: number,
     data?: any,
     customHeaders?: Record<string, string>,
-    responseType: 'text' | 'json' = 'json'
+    responseType: 'text' | 'json' = 'json',
+    sapUsername?: string,
+    sapPassword?: string
 ) {
     if ((method === 'POST' || method === 'PUT') && !csrfToken) {
         try {
-            csrfToken = await fetchCsrfToken(url);
+            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword);
         } catch (error) {
             throw new Error('CSRF token is required for POST/PUT requests but could not be fetched');
         }
     }
     const requestHeaders = {
-        ...(await getAuthHeaders()),
+        ...(await getAuthHeaders(sapUsername, sapPassword)),
         ...(customHeaders || {})
     };
     if ((method === 'POST' || method === 'PUT') && csrfToken) {
@@ -271,18 +291,18 @@ export async function makeAdtRequest(
     if (cookies) {
         requestHeaders['Cookie'] = cookies;
     }
-    // URL이 이미 퍼센트 인코딩된 경우를 처리하기 위해 axios 설정 조정
+    // Adjust axios settings to handle cases where the URL is already percent-encoded
     const config: AxiosRequestConfig = {
         method,
         url,
         headers: requestHeaders,
         timeout,
         responseType,
-        // URL이 이미 인코딩되어 있는 경우 추가 인코딩을 방지
+        // Prevent additional encoding if the URL is already encoded
         validateStatus: function (status) {
-            return status < 500; // 500 이하는 reject하지 않음
+            return status < 500; // Do not reject status codes below 500
         },
-        // axios의 내부 URL 파싱을 우회하기 위해 transformRequest 사용
+        // Use transformRequest to bypass axios's internal URL parsing
         transformRequest: [(data, headers) => {
             // URL이 이미 올바르게 인코딩되어 있으므로 그대로 사용
             return data;
@@ -297,7 +317,7 @@ export async function makeAdtRequest(
     } catch (error) {
         if (error instanceof AxiosError && error.response?.status === 403 &&
             error.response.data?.includes('CSRF')) {
-            csrfToken = await fetchCsrfToken(url);
+            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword);
             const retryConfig: AxiosRequestConfig = {
                 method,
                 url,

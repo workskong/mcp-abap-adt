@@ -1,8 +1,213 @@
 # MCP ABAP ADT Server
+# MCP ABAP ADT Server
 
-**MCP ABAP ADT Server** is a Model Context Protocol (MCP) server for ABAP Development Tools (ADT), providing unified access to SAP ABAP system metadata, source code, and runtime analysis. It exposes a rich set of APIs for DDIC inspection, ABAP object retrieval, trace/dump analysis, and repository search.
+MCP ABAP ADT Server is an open-source Model Context Protocol (MCP) server for SAP ABAP Development Tools (ADT). It provides unified, programmatic access to ABAP system metadata, source code, runtime diagnostics, and repository search via a set of extensible APIs. This project is designed for integration with MCP-capable clients, including editors, automation tools, and custom applications.
 
 ---
+
+## Table of Contents
+
+1. [Features](#features)
+2. [Architecture & Project Structure](#architecture--project-structure)
+3. [Requirements](#requirements)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Usage](#usage)
+7. [Authentication](#authentication)
+8. [Docker Usage](#docker-usage)
+9. [Testing](#testing)
+10. [Extending the Server](#extending-the-server)
+11. [Security](#security)
+12. [Contributing](#contributing)
+13. [License](#license)
+
+---
+
+## Features
+
+- **DDIC Inspection**: Query ABAP tables, structures, CDS views, data elements, domains, and types.
+- **ABAP Source Retrieval**: Access programs, classes, function modules, function groups, includes, interfaces, message classes, packages, and transactions.
+- **Runtime Diagnostics**: List and inspect ABAP runtime traces and dumps.
+- **Repository Search**: Search for ABAP objects using wildcards or regular expressions.
+- **Client-Specific Authentication**: Supports per-client SAP credentials via headers, basic auth, or environment variables.
+- **Extensible Tool Registry**: Easily add new tools via `src/toolDefinitions.ts`.
+- **Server-Sent Events (SSE)**: Real-time event streaming for connected clients.
+
+---
+
+## Architecture & Project Structure
+
+- `src/handlers/` — Individual handler modules for each API/tool.
+- `src/toolDefinitions.ts` — Central registry for all MCP tools.
+- `src/remoteServer.ts` — HTTP/SSE adapter for remote access.
+- `src/lib/` — Utility functions and error handling.
+- `tests/` — Jest unit tests for handlers.
+- `Dockerfile` — Multi-stage build for containerized deployment.
+- `index.ts` — Main entry point for the MCP server.
+
+---
+
+## Requirements
+
+- Node.js 18 or newer (LTS recommended)
+- SAP ABAP system with ADT enabled
+
+---
+
+## Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/workskong/mcp-abap-adt.git
+cd mcp-abap-adt
+npm install
+```
+
+---
+
+## Configuration
+
+Copy the environment template and set your SAP credentials:
+
+```bash
+cp .env.example .env
+# Edit .env to set SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT, etc.
+```
+
+Environment variables (see `.env.example`):
+
+- `SAP_URL` — Base URL for your ABAP system (e.g. https://sap.example.com:8000)
+- `SAP_USERNAME`, `SAP_PASSWORD` — Credentials for ADT access
+- `SAP_CLIENT` — Client number (e.g. 100)
+- `MCP_REMOTE_PORT` — HTTP port for remote adapter (default: 6969)
+- `MCP_SSE_TOKEN` — Token used by SSE endpoints
+- `DANGEROUSLY_OMIT_AUTH` — Set to `true` to disable SSE auth for development only
+
+**Never commit real credentials.** `.env` is gitignored by default.
+
+---
+
+## Usage
+
+### Local Development
+
+Build and start the server:
+
+```bash
+npm run build
+npm start
+```
+
+For development with the MCP inspector:
+
+```bash
+npm run build
+npm run dev
+```
+
+### Remote HTTP Adapter
+
+Expose the MCP server via HTTP/SSE:
+
+```bash
+npm run build
+npm run start-remote
+```
+
+Endpoints:
+
+- `GET /tools` — List available tools and input schemas
+- `POST /call` — Invoke a tool by name
+- `GET /events`, `GET /sse` — SSE endpoints for real-time events
+- `POST /emit` — Emit custom SSE events (dev only)
+
+---
+
+## Authentication
+
+Three supported methods:
+
+1. **Custom Headers** (recommended for VS Code MCP clients)
+2. **HTTP Basic Auth**
+3. **Environment Variables** (fallback)
+
+See the original README or `docs/CLIENT_AUTH.md` for configuration examples.
+
+---
+
+## Docker Usage
+
+Build and run the server in a container:
+
+```bash
+docker build -t mcp-abap-adt:latest .
+docker run --rm \
+  -e SAP_URL="https://sap.example.com:8000" \
+  -e SAP_USERNAME="your_user" \
+  -e SAP_PASSWORD="your_password" \
+  -e MCP_SSE_TOKEN="your_sse_token" \
+  -p 6969:6969 \
+  mcp-abap-adt:latest
+```
+
+**Notes:**
+
+- The default runtime port is `6969`. Override with `MCP_REMOTE_PORT` or `PORT`.
+- Do not bake credentials into the image. Use environment variables or Docker secrets.
+- The Dockerfile creates a non-root runtime user; do not run as root in production.
+
+---
+
+## Testing
+
+Run all unit tests with Jest:
+
+```bash
+npm test
+```
+
+Unit tests are located in the `tests/` directory. New handlers should include tests for both success and error cases.
+
+---
+
+## Extending the Server
+
+- Add new tools in `src/toolDefinitions.ts`.
+- Implement handler logic in `src/handlers/`.
+- Utilities and error handling are in `src/lib/`.
+
+**Development tips:**
+
+- Run `npm run build` to check for TypeScript errors.
+- If you see build errors, check for missing exports or incorrect tool definitions.
+
+---
+
+## Security
+
+- Never commit credentials; use environment variables or secret managers.
+- Use a strong `MCP_SSE_TOKEN` and avoid `DANGEROUSLY_OMIT_AUTH=true` outside local development.
+- Protect SSE endpoints and remote adapter with TLS and authentication for public deployments.
+
+---
+
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Add or update tests for new features.
+3. Submit a pull request with a clear description.
+
+---
+
+## License
+
+MIT — see `LICENSE`.
+
+---
+
+For questions, issues, or feature requests, please open an issue or contact the maintainer.
+**MCP ABAP ADT Server** is a Model Context Protocol (MCP) server for ABAP Development Tools (ADT), providing unified access to SAP ABAP system metadata, source code, and runtime analysis. It exposes a rich set of APIs for DDIC inspection, ABAP object retrieval, trace/dump analysis, and repository search.
 
 ## ✨ Features
 
@@ -10,15 +215,85 @@
 - **ABAP Object Retrieval**: Programs, classes, function modules, function groups, includes, interfaces, message classes, packages, transactions.
 - **Runtime Analysis**: ABAP trace listing and details, runtime dump listing and details.
 - **Repository Search**: Object search (wildcard/regex).
+- **Client-specific Authentication**: Support for individual SAP credentials per MCP client.
 - **Extensible Tool Registry**: All APIs are defined in `src/toolDefinitions.ts` for easy extension and MCP client integration.
-
----
 
 ## 🚀 Getting Started
 
 ### Requirements
 
 - Node.js 18+ (LTS recommended)
+- Access to an SAP ABAP system with ADT enabled
+
+### Authentication Methods
+
+This MCP server supports multiple authentication methods:
+
+#### 1. Custom Headers (VS Code MCP Recommended)
+Configure your MCP client to send SAP credentials via custom headers:
+
+```json
+{
+  "inputs": [
+    {
+      "id": "sap_user",
+      "type": "promptString",
+      "description": "SAP Username",
+      "password": false
+    },
+    {
+      "id": "sap_pass",
+      "type": "promptString", 
+      "description": "SAP Password",
+      "password": true
+    }
+  ],
+  "servers": {
+    "mcp-abap-adt": {
+      "type": "sse",
+      "url": "http://localhost:6969",
+      "headers": {
+        "X-Username": "${input:sap_user}",
+        "X-Password": "${input:sap_pass}"
+      }
+    }
+  }
+}
+```
+
+#### 2. HTTP Basic Authentication
+Alternative method using standard Basic Auth:
+
+```json
+{
+  "inputs": [
+    { 
+      "id": "basic_user", 
+      "type": "promptString", 
+      "description": "SAP Username", 
+      "password": false 
+    },
+    { 
+      "id": "basic_pass", 
+      "type": "promptString", 
+      "description": "SAP Password", 
+      "password": true 
+    }
+  ],
+  "servers": {
+    "mcp-abap-adt": {
+      "type": "sse",
+      "url": "http://localhost:6969",
+      "headers": {
+        "Authorization": "Basic ${base64(input:basic_user + ':' + input:basic_pass)}"
+      }
+    }
+  }
+}
+```
+
+#### 3. Environment Variables (Fallback)
+If client authentication is not provided, the server uses environment variables:
 ## MCP ABAP ADT — Model Context Protocol server for ABAP
 
 This repository implements an MCP (Model Context Protocol) server that exposes SAP ABAP Development Tools (ADT) functionality as a set of tools. Use it to query DDIC metadata, retrieve ABAP sources, inspect runtime dumps and traces, and run repository searches from any MCP-capable client.

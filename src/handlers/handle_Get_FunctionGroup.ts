@@ -3,6 +3,8 @@ import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../li
 
 interface GetFunctionGroupArgs {
   function_group: string;
+  _sapUsername?: string;
+  _sapPassword?: string;
 }
 
 export async function handleGetFunctionGroup(args: GetFunctionGroupArgs) {
@@ -11,8 +13,10 @@ export async function handleGetFunctionGroup(args: GetFunctionGroupArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Function Group is required');
     }
 
-    const url = `${await getBaseUrl()}/sap/bc/adt/functions/groups/${args.function_group}/source/main`;
-    const response = await makeAdtRequest(url, 'GET', 30000);
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
+
+    const url = `${baseUrl}/sap/bc/adt/functions/groups/${args.function_group}/source/main`;
+    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword);
 
     return return_response(response);
   } catch (error) {

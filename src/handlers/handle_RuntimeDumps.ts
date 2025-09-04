@@ -3,19 +3,20 @@ import { handleMcpError } from '../lib/mcpErrorHandler';
 import { DOMParser, XMLSerializer } from 'xmldom';
 import { AxiosResponse } from 'axios';
 
-// 런타임 덤프 리스트 조회 파라미터 타입
+// Runtime dump list query parameter type
 export interface RuntimeDumpsArgs {
-  start_date?: string;  // YYYY-MM-DD 또는 YYYYMMDD 형식
-  end_date?: string;    // YYYY-MM-DD 또는 YYYYMMDD 형식
-  start_time?: string;  // 00:00:00 또는 000000 기본값 000000
-  end_time?: string;    // 00:00:00 또는 000000 기본값 235959
-  category?: string;    // 선택적
+  start_date?: string;
+  end_date?: string;
+  start_time?: string;
+  end_time?: string;
+  category?: string;
   maxResults?: number;
+  _sapUsername?: string;
+  _sapPassword?: string;
 }
 
 export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> {
   try {
-    // 파라미터 기본값 및 정규화
     const startDate = args.start_date ? args.start_date.replace(/-/g, '') : new Date().toISOString().slice(0, 10).replace(/-/g, '');
     let endDate = (typeof args.end_date === 'string' && args.end_date.trim() !== '')
       ? args.end_date.replace(/-/g, '')
@@ -34,9 +35,10 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
     const from = `${startDate}${startTime}`;
     const to = `${endDate}${endTime}`;
 
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
     // SAP ADT API 호출
-    const requestUrl = `${await getBaseUrl()}/sap/bc/adt/runtime/dumps?from=${from}&to=${to}`;
-    const adtRes = await makeAdtRequest(requestUrl, 'GET', 30000);
+    const requestUrl = `${baseUrl}/sap/bc/adt/runtime/dumps?from=${from}&to=${to}`;
+    const adtRes = await makeAdtRequest(requestUrl, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword);
     let xml = adtRes.data;
 
     // <atom:entry> 요소 개수 제한 및 카테고리 필터링
@@ -64,7 +66,7 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
   }
 }
 
-function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, category?: string): { xml: string, totalCount: number, displayCount: number   } {
+function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, category?: string): { xml: string, totalCount: number, displayCount: number } {
   let totalCount = 0;
   let displayCount = 0;
   let limitedXml = xmlString;
@@ -72,7 +74,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const entries = doc.getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
-    
+
     // category 필터링
     if (category) {
       for (let i = entries.length - 1; i >= 0; i--) {
@@ -90,7 +92,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
           entry.parentNode?.removeChild(entry);
         }
       }
-    }  
+    }
     // 필터링 후 남은 entry 개수
     totalCount = entries.length;
 

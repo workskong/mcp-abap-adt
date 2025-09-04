@@ -8,6 +8,52 @@ dotenv.config();
 
 type ToolDef = any;
 
+// Function to extract user authentication information from HTTP Basic Authentication header
+function extractBasicAuth(req: Request): { username: string; password: string } | null {
+  const authHeader = req.headers?.authorization || '';
+  if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('basic ')) {
+    try {
+      const base64Credentials = authHeader.slice(6);
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+      const [username, password] = credentials.split(':');
+      if (username && password) {
+        return { username, password };
+      }
+    } catch (error) {
+      console.warn('Failed to parse Basic Auth header:', error);
+    }
+  }
+  return null;
+}
+
+// Function to extract user authentication information from custom headers (X-Username, X-Password)
+function extractCustomHeaders(req: Request): { username: string; password: string } | null {
+  const username = req.headers['x-username'] as string;
+  const password = req.headers['x-password'] as string;
+  
+  if (username && password) {
+    return { username, password };
+  }
+  return null;
+}
+
+// Function to extract user authentication information by trying all authentication methods
+function extractAuthInfo(req: Request): { username: string; password: string } | null {
+  // 1. Check custom headers first (used by VS Code MCP client)
+  const customAuth = extractCustomHeaders(req);
+  if (customAuth) {
+    return customAuth;
+  }
+  
+  // 2. Check Basic Auth header
+  const basicAuth = extractBasicAuth(req);
+  if (basicAuth) {
+    return basicAuth;
+  }
+  
+  return null;
+}
+
 export async function startRemoteServer(toolDefinitions: ToolDef[], port = process.env.MCP_REMOTE_PORT ? Number(process.env.MCP_REMOTE_PORT) : (process.env.PORT ? Number(process.env.PORT) : 6969)) {
   const app = express();
   app.use(bodyParser.json());
@@ -34,7 +80,15 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         }
       }
 
-      const result = await tool.handler(provided);
+  // Attempt all authentication methods to extract SAP user information
+      const authInfo = extractAuthInfo(req);
+      const enrichedArgs = {
+        ...provided,
+        _sapUsername: authInfo?.username,
+        _sapPassword: authInfo?.password
+      };
+
+      const result = await tool.handler(enrichedArgs);
       // some handlers return MCP error shapes; pass through
       res.json(result as any);
     } catch (err: any) {
@@ -139,8 +193,16 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
           }
         }
         
+        // 모든 인증 방식을 시도하여 SAP 사용자 정보 추출
+        const authInfo = extractAuthInfo(req);
+        const enrichedArgs = {
+          ...args,
+          _sapUsername: authInfo?.username,
+          _sapPassword: authInfo?.password
+        };
+        
         // Execute tool and return result
-        tool.handler(args).then(result => {
+        tool.handler(enrichedArgs).then(result => {
           res.json({
             jsonrpc: '2.0',
             id,
