@@ -2,8 +2,9 @@ import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import * as dotenv from 'dotenv';
 import { sseHandler, sendSseEvent, getConnectedCount } from './sse';
+import { DEFAULT_PORT } from './config';
 
-// Load .env (if present) so users can configure MCP_REMOTE_PORT and other settings
+// Load .env (if present) so users can configure PORT and other settings
 dotenv.config();
 
 type ToolDef = any;
@@ -54,7 +55,7 @@ function extractAuthInfo(req: Request): { username: string; password: string } |
   return null;
 }
 
-export async function startRemoteServer(toolDefinitions: ToolDef[], port = process.env.MCP_REMOTE_PORT ? Number(process.env.MCP_REMOTE_PORT) : (process.env.PORT ? Number(process.env.PORT) : 6969)) {
+export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAULT_PORT) {
   const app = express();
   app.use(bodyParser.json());
 

@@ -39,7 +39,8 @@ COPY --from=builder /app/dist ./dist
 RUN addgroup -S app && adduser -S app -G app || true
 USER app
 
-# Default port for remote adapter (can be overridden with MCP_REMOTE_PORT or PORT)
-EXPOSE 6969
+# Default port for remote adapter (can be overridden with PORT environment variable)
+ENV PORT=6969
+EXPOSE $PORT
 
 CMD ["node", "dist/index.js"]
