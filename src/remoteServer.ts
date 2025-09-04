@@ -30,7 +30,7 @@ function extractBasicAuth(req: Request): { username: string; password: string } 
 function extractCustomHeaders(req: Request): { username: string; password: string } | null {
   const username = req.headers['x-username'] as string;
   const password = req.headers['x-password'] as string;
-  
+
   if (username && password) {
     return { username, password };
   }
@@ -44,13 +44,13 @@ function extractAuthInfo(req: Request): { username: string; password: string } |
   if (customAuth) {
     return customAuth;
   }
-  
+
   // 2. Check Basic Auth header
   const basicAuth = extractBasicAuth(req);
   if (basicAuth) {
     return basicAuth;
   }
-  
+
   return null;
 }
 
@@ -80,7 +80,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         }
       }
 
-  // Attempt all authentication methods to extract SAP user information
+      // Attempt all authentication methods to extract SAP user information
       const authInfo = extractAuthInfo(req);
       const enrichedArgs = {
         ...provided,
@@ -130,7 +130,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
   app.post('/', (req: Request, res: Response) => {
     try {
       const { method, id, params } = req.body || {};
-      
+
       if (method === 'initialize') {
         // Respond with MCP server capabilities
         const response = {
@@ -152,7 +152,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         };
         return res.json(response);
       }
-      
+
       if (method === 'tools/list') {
         const response = {
           jsonrpc: '2.0',
@@ -165,12 +165,12 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         };
         return res.json(response);
       }
-      
+
       if (method === 'tools/call') {
         // Handle tool calls similar to /call endpoint
         const toolName = params?.name;
         const args = params?.arguments || {};
-        
+
         const tool = toolDefinitions.find(t => t.name === toolName);
         if (!tool) {
           return res.json({
@@ -179,7 +179,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
             error: { code: -32601, message: `Unknown tool: ${toolName}` }
           });
         }
-        
+
         // Validate required parameters
         if (Array.isArray(tool.inputSchema?.required)) {
           for (const reqKey of tool.inputSchema.required) {
@@ -192,15 +192,15 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
             }
           }
         }
-        
-        // 모든 인증 방식을 시도하여 SAP 사용자 정보 추출
+
+        // Attempt all authentication methods to extract SAP user information
         const authInfo = extractAuthInfo(req);
         const enrichedArgs = {
           ...args,
           _sapUsername: authInfo?.username,
           _sapPassword: authInfo?.password
         };
-        
+
         // Execute tool and return result
         tool.handler(enrichedArgs).then(result => {
           res.json({
@@ -217,14 +217,14 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         });
         return;
       }
-      
+
       // Generic success for other methods
       res.json({
         jsonrpc: '2.0',
         id,
         result: { ok: true }
       });
-      
+
     } catch (err: any) {
       res.status(500).json({
         jsonrpc: '2.0',
@@ -258,7 +258,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
       resolve();
     });
     server.on('error', (err: Error) => reject(err));
-    
+
     // Keep the process alive by handling process signals
     process.on('SIGINT', () => {
       console.log('\nShutting down remote server...');
@@ -267,7 +267,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = proce
         process.exit(0);
       });
     });
-    
+
     process.on('SIGTERM', () => {
       console.log('\nShutting down remote server...');
       server.close(() => {
