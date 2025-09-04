@@ -1,30 +1,50 @@
-# MCP 클라이언트별 SAP 인증 설정 가이드
+(This file explains how clients provide SAP credentials to the MCP server. It is written for beginners and focused on this repository.)
 
-이 MCP 서버는 다양한 인증 방식을 통해 클라이언트별로 개별적인 SAP 아이디와 비밀번호를 사용할 수 있도록 지원합니다.
+# Client-specific SAP authentication (MCP server) — Beginner friendly guide
 
-## 지원하는 인증 방식
+Purpose
+- Help beginners configure a client to send SAP credentials to the MCP server in this repository.
+- Show two supported methods, examples, quick tests, and a troubleshooting checklist.
 
-### 방식 1: 커스텀 헤더 (VS Code MCP 권장)
+Checklist (what I'll cover)
+- Explain the two supported auth methods.
+- Show example `mcp.json` configurations for VS Code MCP.
+- Show how to build Basic auth headers in PowerShell and bash.
+- Show simple curl/PowerShell checks to confirm headers arrive.
+- Explain `.env` fallback variables used by the server.
 
-VS Code MCP 클라이언트에서 사용하는 방식으로, `X-Username`과 `X-Password` 헤더를 사용합니다.
+Who should read this
+- Developers configuring the VS Code MCP client or any HTTP client to connect to this project.
 
-#### VS Code 설정 예시 (`mcp.json`)
+---
+
+## 1) Two supported authentication methods (quick)
+
+- Custom headers (recommended for VS Code MCP): the client sends `X-Username` and `X-Password` headers.
+- HTTP Basic Authentication: the client sends `Authorization: Basic <base64>`.
+
+Either method allows different clients to use different SAP accounts. If a client sends no credentials, the server falls back to environment variables from `.env`.
+
+## 2) How it works (simple flow)
+
+1. Client opens a connection and sends HTTP headers (custom headers or Authorization).
+2. The MCP server reads headers from the incoming request.
+3. Server extracts username and password and uses them to open a connection to the SAP system for that client session.
+4. If no credentials are provided, server uses default values from `.env`.
+
+This lets multiple clients connect at once with different SAP accounts.
+
+## 3) VS Code MCP client examples
+
+These examples show how to prompt for credentials and send them in requests to the MCP server running locally (default SSE URL used in this repo: `http://localhost:6969`).
+
+Example: Custom headers (recommended)
 
 ```json
 {
   "inputs": [
-    {
-      "id": "sap_user",
-      "type": "promptString",
-      "description": "SAP Username",
-      "password": false
-    },
-    {
-      "id": "sap_pass",
-      "type": "promptString", 
-      "description": "SAP Password",
-      "password": true
-    }
+    { "id": "sap_user", "type": "promptString", "description": "SAP Username", "password": false },
+    { "id": "sap_pass", "type": "promptString", "description": "SAP Password", "password": true }
   ],
   "servers": {
     "mcp-abap-adt": {
@@ -39,72 +59,80 @@ VS Code MCP 클라이언트에서 사용하는 방식으로, `X-Username`과 `X-
 }
 ```
 
-### 방식 2: HTTP Basic Authentication
+Why use custom headers: the client can prompt for credentials each session and avoids storing passwords on disk.
 
-표준 HTTP Basic Authentication을 사용하는 방식입니다.
+Example: HTTP Basic Authentication
 
 ```json
 {
   "inputs": [
-    { 
-      "id": "basic_user", 
-      "type": "promptString", 
-      "description": "SAP Username", 
-      "password": false 
-    },
-    { 
-      "id": "basic_pass", 
-      "type": "promptString", 
-      "description": "SAP Password", 
-      "password": true 
-    }
+    { "id": "basic_user", "type": "promptString", "description": "SAP Username", "password": false },
+    { "id": "basic_pass", "type": "promptString", "description": "SAP Password", "password": true }
   ],
   "servers": {
     "mcp-abap-adt": {
       "type": "sse",
       "url": "http://localhost:6969",
       "headers": {
-        "Authorization": "Basic ${base64(input:basic_user + ':' + input:basic_pass)}"
+        "Authorization": "Basic ${base64(input:basic_user + ':' + basic_pass)}"
       }
     }
   }
 }
 ```
 
-## 동작 원리
+If your client cannot compute the base64 expression inline, build it manually (examples below).
 
-1. **사용자 입력**: MCP 클라이언트가 시작될 때 사용자에게 SAP 아이디와 비밀번호를 입력하라는 프롬프트가 표시됩니다.
+## 4) Build Basic auth header manually
 
-2. **인증 헤더 생성**: 입력된 아이디와 비밀번호가 Base64로 인코딩되어 HTTP Basic Authentication 헤더에 포함됩니다.
+PowerShell (Windows):
 
-3. **서버 처리**: MCP 서버는 Authorization 헤더에서 SAP 인증 정보를 추출하여 SAP 시스템에 접속합니다.
+```powershell
+$plain = "username:password"
+$base64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($plain))
+"Authorization: Basic $base64"
+```
 
-4. **폴백 처리**: 클라이언트가 인증 정보를 제공하지 않으면 서버는 `.env` 파일의 기본값을 사용합니다.
-
-## 다중 클라이언트 지원
-
-여러 클라이언트가 동시에 서로 다른 SAP 계정으로 접속할 수 있습니다:
-
-**개발자 클라이언트:**
-- 사용자 입력: `dev00` / `DevPassword123`
-
-**관리자 클라이언트:**
-- 사용자 입력: `admin` / `AdminPassword456`
-
-각 클라이언트는 독립적으로 자신의 SAP 계정으로 인증됩니다.
-
-## 보안 특징
-
-- ✅ 비밀번호가 설정 파일에 저장되지 않음
-- ✅ 사용자가 매번 직접 입력
-- ✅ HTTPS를 사용하면 전송 중 암호화됨
-- ✅ 각 클라이언트가 독립적인 인증 정보 사용
-
-## 폴백 설정
-
-클라이언트에서 인증 정보를 제공하지 않은 경우, 서버는 `.env` 파일의 다음 환경변수를 사용합니다:
+bash (macOS / Linux):
 
 ```bash
+echo -n 'username:password' | base64
+# prepend: Authorization: Basic <base64-value>
+```
+
+## 5) Quick network tests (confirm headers reach the server)
+
+Custom headers test (curl):
+
+```bash
+curl -v -H "X-Username: dev00" -H "X-Password: DevPassword123" http://localhost:6969/
+```
+
+PowerShell example for Basic auth header:
+
+```powershell
+$b = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("dev00:DevPassword123"))
+curl -v -H ("Authorization: Basic $b") http://localhost:6969/
+```
+
+Notes:
+- The MCP server exposes multiple endpoints for handlers; these curl samples only check that headers are transmitted to the server.
+- Use `-v` or `--verbose` with curl to inspect request headers.
+
+## 6) Fallback: `.env` environment variables
+
+If a client doesn't send credentials, the server uses values from `.env`. Typical variables in this project:
+
+- SAP_URL (e.g. `http://localhost:50000`)
+- SAP_USERNAME
+- SAP_PASSWORD
+- SAP_CLIENT (e.g. `001`)
+- SAP_LANGUAGE (e.g. `en`)
+- TLS_REJECT_UNAUTHORIZED (0 for local/testing with self-signed certs)
+
+Example `.env` snippet:
+
+```env
 SAP_URL=http://localhost:50000
 SAP_USERNAME=dev00
 SAP_PASSWORD=Welcome2025
@@ -113,19 +141,45 @@ SAP_LANGUAGE=en
 TLS_REJECT_UNAUTHORIZED=0
 ```
 
-## 테스트 방법
+## 7) Security basics (what beginners should know)
 
-1. MCP 서버 시작:
-   ```bash
-   npm run start-remote
-   ```
+- Never commit real passwords to source control.
+- Use HTTPS for production so credentials are encrypted in transit.
+- Prefer the custom-header flow in VS Code because it prompts the user and avoids saving secrets.
+- Limit SAP account permissions to the minimum required.
 
-2. 클라이언트 연결 시 사용자 아이디와 비밀번호 입력
+## 8) Troubleshooting checklist
 
-3. SAP 시스템 연결 확인
+1. Is the MCP server running? Start it with:
 
-## 주의사항
+```powershell
+npm run start-remote
+```
 
-- 프로덕션 환경에서는 HTTPS를 사용하여 보안을 강화하세요
-- SAP 시스템의 사용자 계정이 필요한 권한을 가지고 있는지 확인하세요
-- 네트워크 연결과 방화벽 설정을 확인하세요
+2. Are credentials correct? Try them directly against SAP if you can.
+3. Are request headers present? Use `curl -v` or a request inspector (proxy) to verify.
+4. Check server logs for authentication or connection errors.
+5. If using TLS, verify certificates or `TLS_REJECT_UNAUTHORIZED` is set appropriately for development.
+
+## 9) Try it locally (quick steps)
+
+1. Install dependencies if needed:
+
+```powershell
+npm install
+```
+
+2. Start the remote MCP server used by this project:
+
+```powershell
+npm run start-remote
+```
+
+3. Connect a client using one of the `mcp.json` examples above, or test with curl/PowerShell.
+
+---
+
+If you want, I can add:
+- step-by-step VS Code screenshots for setting inputs,
+- a short test script that sends headers to the handler used in `src/handlers/handle_SearchObject.ts`,
+- example server log lines that indicate successful or failed SAP authentication.
