@@ -36,7 +36,7 @@ export class mcp_abap_adt_server {
         if (!tool) {
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
         }
-  // Check required parameters (only 'required' supported)
+        // Check required parameters (only 'required' supported)
         const args = request.params.arguments || {};
         if (Array.isArray(tool.inputSchema.required)) {
           for (const reqKey of tool.inputSchema.required) {
@@ -45,7 +45,7 @@ export class mcp_abap_adt_server {
             }
           }
         }
-  // Call handler with type safety
+        // Call handler with type safety
         return await tool.handler(args as any);
       } catch (error) {
         return return_error(error);
