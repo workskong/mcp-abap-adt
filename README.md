@@ -193,12 +193,6 @@ Note: The image's HEALTHCHECK may use `wget`/`curl` against `/health`; ensure th
 ***
 
 ## 🛠 Tools
-
-Each tool has: `name`, `description`, `inputSchema`.  
-For live schemas → `GET /tools` endpoint.
-
-## 🛠 Tools
-
 Each tool exposes `name`, `description` and `inputSchema` via the `/tools` endpoint. The server ships the following tools (see `src/lib/toolDefinitions.ts` for the canonical list):
 
 | Tool | Description | Key Inputs |
@@ -264,10 +258,9 @@ How to add a new tool:
 ***
 
 ## ❗ Troubleshooting
-Troubleshooting:
-- Error: PORT required → set `$env:PORT = "6969"` (PowerShell) or export `PORT` in your environment.
-- Healthcheck fails → confirm `wget`/`curl` is available in the container image or adjust the Dockerfile.
-- Authentication issues → try Basic Auth or headers (`X-Username`/`X-Password` or `X-SAP_USERNAME`/`X-SAP_PASSWORD`).
+ - Error: PORT required → set `$env:PORT = "6969"` (PowerShell) or export `PORT` in your environment.
+ - Healthcheck fails → confirm `wget`/`curl` is available in the container image or adjust the Dockerfile.
+ - Authentication issues → try Basic Auth or headers (`X-Username`/`X-Password` or `X-SAP_USERNAME`/`X-SAP_PASSWORD`).
 
 ***
 
