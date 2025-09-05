@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import * as dotenv from 'dotenv';
 import { sseHandler, sendSseEvent, getConnectedCount } from './sse';
 import { DEFAULT_PORT } from './config';
+import { getPackageInfo } from './utils';
 
 // Load .env (if present) so users can configure PORT and other settings
 dotenv.config();
@@ -98,33 +99,18 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
   });
 
   // SSE endpoint for clients that want server-sent events from this MCP remote
-  // Authentication: either set DANGEROUSLY_OMIT_AUTH=true in env to skip, or provide
-  // Authorization: Bearer <token> header or ?token=<token> query param.
-  const sseToken = process.env.MCP_SSE_TOKEN || 'default-mcp-sse-token';
-  function checkAuth(req: Request) {
-    if (process.env.DANGEROUSLY_OMIT_AUTH === 'true') return true;
-    const h = req.headers?.authorization || '';
-    if (typeof h === 'string' && h.toLowerCase().startsWith('bearer ')) {
-      const t = h.slice(7).trim();
-      return t === sseToken;
-    }
-    if (req.query && req.query.token) return req.query.token === sseToken;
-    return false;
-  }
-
   app.get('/events', (req: Request, res: Response) => {
-    if (!checkAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
     return sseHandler(req, res);
   });
   // Backwards-compatible path expected by some inspectors/proxies
   app.get('/sse', (req: Request, res: Response) => {
-    if (!checkAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
     return sseHandler(req, res);
   });
 
   // Small root and authorize endpoints to satisfy clients that probe the base URL
   app.get('/', (_req: Request, res: Response) => {
-    res.json({ ok: true, name: 'mcp-abap-adt remote', version: '1.2.0' });
+    const packageInfo = getPackageInfo();
+    res.json({ ok: true, name: packageInfo.name, version: packageInfo.version });
   });
 
   // MCP JSON-RPC HTTP transport handler for initialize and other requests
@@ -134,6 +120,7 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
 
       if (method === 'initialize') {
         // Respond with MCP server capabilities
+        const packageInfo = getPackageInfo();
         const response = {
           jsonrpc: '2.0',
           id,
@@ -146,8 +133,8 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
               logging: {}
             },
             serverInfo: {
-              name: 'mcp-abap-adt',
-              version: '1.2.0'
+              name: packageInfo.name,
+              version: packageInfo.version
             }
           }
         };
@@ -245,7 +232,6 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
   // Small helper endpoint for manually emitting test events from HTTP (useful during dev).
   // Accepts JSON body { event: string, data: any, topic?: string }
   app.post('/emit', (req: Request, res: Response) => {
-    if (!checkAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
     const { event, data, topic } = req.body || {};
     if (!event) return res.status(400).json({ error: 'Missing event name' });
     sendSseEvent(event, data === undefined ? null : data, topic);

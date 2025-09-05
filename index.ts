@@ -2,8 +2,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { return_error, type SapConfig } from './src/lib/utils';
+import { return_error, type SapConfig, getPackageInfo } from './src/lib/utils';
 import { toolDefinitions } from './src/lib/toolDefinitions';
+
+// Get package info from package.json
+const { name: PACKAGE_NAME, version: PACKAGE_VERSION } = getPackageInfo();
 
 // === MCP server class ===
 export class mcp_abap_adt_server {
@@ -11,8 +14,8 @@ export class mcp_abap_adt_server {
   private sapConfig?: SapConfig;
 
   constructor() {
-  this.server = new Server(
-      { name: 'mcp-abap-adt', version: '1.2.0' },
+    this.server = new Server(
+      { name: PACKAGE_NAME, version: PACKAGE_VERSION },
       { capabilities: { tools: {} } }
     );
     this.setupHandlers();

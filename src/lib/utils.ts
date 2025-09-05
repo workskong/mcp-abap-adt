@@ -4,6 +4,27 @@ dotenv.config();
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Agent } from 'https';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Function to get package info from package.json
+export function getPackageInfo(): { name: string; version: string } {
+    try {
+        const packagePath = join(process.cwd(), 'package.json');
+        const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as { name?: string; version?: string };
+        return {
+            name: packageJson.name || 'mcp-abap-adt',
+            version: packageJson.version || '0.0.0'
+        };
+    } catch (error) {
+        console.warn('Failed to read package.json, using defaults:', error);
+        return {
+            name: 'mcp-abap-adt',
+            version: '0.0.0'
+        };
+    }
+}
+
 // Define and export SAP Config type and getConfig function directly in utils.ts
 export type SapConfig = {
     url: string;
