@@ -9,6 +9,8 @@ interface ABAPTraces {
   objectNameFilter?: string;
   _sapUsername?: string;
   _sapPassword?: string;
+  _sapClient?: string;
+  _sapLanguage?: string;
 }
 
 export async function Get_ABAPTraces(args: ABAPTraces) {
@@ -17,7 +19,7 @@ export async function Get_ABAPTraces(args: ABAPTraces) {
       throw new McpError(ErrorCode.InvalidParams, 'User is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     const user = args.user.trim().toUpperCase();
     const maxResults = args.maxResults ?? 5;
     let trimmedNotice = '';
@@ -28,7 +30,7 @@ export async function Get_ABAPTraces(args: ABAPTraces) {
     }
 
     const url = `${baseUrl}/sap/bc/adt/runtime/traces/abaptraces?user=${user}`;
-    const adtRes = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'text', args._sapUsername, args._sapPassword);
+    const adtRes = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'text', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     let xml = adtRes.data;
 
     const limited = limitAtomEntries(xml, limitedMax, args.objectNameFilter);

@@ -13,6 +13,8 @@ export interface RuntimeDumpsArgs {
   maxResults?: number;
   _sapUsername?: string;
   _sapPassword?: string;
+  _sapClient?: string;
+  _sapLanguage?: string;
 }
 
 export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> {
@@ -35,10 +37,10 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
     const from = `${startDate}${startTime}`;
     const to = `${endDate}${endTime}`;
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
   // Call SAP ADT API
     const requestUrl = `${baseUrl}/sap/bc/adt/runtime/dumps?from=${from}&to=${to}`;
-    const adtRes = await makeAdtRequest(requestUrl, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword);
+    const adtRes = await makeAdtRequest(requestUrl, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     let xml = adtRes.data;
 
   // Limit <atom:entry> element count and apply category filtering

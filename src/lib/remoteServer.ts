@@ -28,29 +28,40 @@ function extractBasicAuth(req: Request): { username: string; password: string } 
   return null;
 }
 
-// Function to extract user authentication information from custom headers (X-Username, X-Password)
-function extractCustomHeaders(req: Request): { username: string; password: string } | null {
-  const username = req.headers['x-username'] as string;
-  const password = req.headers['x-password'] as string;
+// Function to extract SAP authentication information from custom headers
+function extractCustomHeaders(req: Request): { username: string; password: string; client: string; language: string } | null {
+  console.log('Received headers:', JSON.stringify(req.headers, null, 2));
+  
+  const username = req.headers['x-sap_username'] as string;
+  const password = req.headers['x-sap_password'] as string;
+  const client = req.headers['x-sap_client'] as string;
+  const language = req.headers['x-sap_language'] as string;
 
-  if (username && password) {
-    return { username, password };
+  console.log('Extracted SAP headers:', { username, password: password ? '***' : undefined, client, language });
+
+  if (username && password && client && language) {
+    return { username, password, client, language };
   }
   return null;
 }
 
-// Function to extract user authentication information by trying all authentication methods
-function extractAuthInfo(req: Request): { username: string; password: string } | null {
+// Function to extract SAP authentication information by trying all authentication methods
+function extractAuthInfo(req: Request): { username: string; password: string; client: string; language: string } | null {
   // 1. Check custom headers first (used by VS Code MCP client)
   const customAuth = extractCustomHeaders(req);
   if (customAuth) {
     return customAuth;
   }
 
-  // 2. Check Basic Auth header
+  // 2. For backwards compatibility, check Basic Auth header (only username/password)
   const basicAuth = extractBasicAuth(req);
   if (basicAuth) {
-    return basicAuth;
+    return {
+      username: basicAuth.username,
+      password: basicAuth.password,
+      client: '',
+      language: ''
+    };
   }
 
   return null;
@@ -87,7 +98,9 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
       const enrichedArgs = {
         ...provided,
         _sapUsername: authInfo?.username,
-        _sapPassword: authInfo?.password
+        _sapPassword: authInfo?.password,
+        _sapClient: authInfo?.client,
+        _sapLanguage: authInfo?.language
       };
 
       const result = await tool.handler(enrichedArgs);
@@ -186,7 +199,9 @@ export async function startRemoteServer(toolDefinitions: ToolDef[], port = DEFAU
         const enrichedArgs = {
           ...args,
           _sapUsername: authInfo?.username,
-          _sapPassword: authInfo?.password
+          _sapPassword: authInfo?.password,
+          _sapClient: authInfo?.client,
+          _sapLanguage: authInfo?.language
         };
 
         // Execute tool and return result

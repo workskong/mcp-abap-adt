@@ -31,18 +31,20 @@ export type SapConfig = {
     username: string;
     password: string;
     client: string;
+    language?: string;
 };
 
-// Example function to get SAP connection information from environment variables or a separate config file
-export function getConfig(sapUsername?: string, sapPassword?: string): SapConfig {
+// Example function to get SAP connection information from headers or environment variables as fallback
+export function getConfig(sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string): SapConfig {
     const url = process.env.SAP_URL;
     const username = sapUsername || process.env.SAP_USERNAME;
     const password = sapPassword || process.env.SAP_PASSWORD;
-    const client = process.env.SAP_CLIENT;
+    const client = sapClient || process.env.SAP_CLIENT;
+    const language = sapLanguage || process.env.SAP_LANGUAGE || 'EN';
     if (!url || !username || !password || !client) {
-        throw new Error('All SAP environment variables (SAP_URL, SAP_USERNAME, SAP_PASSWORD, SAP_CLIENT) must be set.');
+        throw new Error('All SAP connection parameters (URL, USERNAME, PASSWORD, CLIENT) must be provided via headers or environment variables.');
     }
-    return { url, username, password, client };
+    return { url, username, password, client, language };
 }
 import convert from 'xml-js';
 
@@ -205,11 +207,11 @@ let config: SapConfig | undefined;
 let csrfToken: string | null = null;
 let cookies: string | null = null; // Variable to store cookies
 
-export async function getBaseUrl(sapUsername?: string, sapPassword?: string) {
+export async function getBaseUrl(sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string) {
     let currentConfig: SapConfig;
     
-    if (sapUsername && sapPassword) {
-        currentConfig = getConfig(sapUsername, sapPassword);
+    if (sapUsername && sapPassword && sapClient) {
+        currentConfig = getConfig(sapUsername, sapPassword, sapClient, sapLanguage);
     } else {
         if (!config) {
             config = getConfig();
@@ -231,12 +233,12 @@ export async function getBaseUrl(sapUsername?: string, sapPassword?: string) {
     }
 }
 
-export async function getAuthHeaders(sapUsername?: string, sapPassword?: string) {
+export async function getAuthHeaders(sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string) {
     let currentConfig: SapConfig;
     
-    if (sapUsername && sapPassword) {
+    if (sapUsername && sapPassword && sapClient) {
     // Use authentication information provided by the client
-        currentConfig = getConfig(sapUsername, sapPassword);
+        currentConfig = getConfig(sapUsername, sapPassword, sapClient, sapLanguage);
     } else {
     // Use default configuration
         if (!config) {
@@ -245,21 +247,27 @@ export async function getAuthHeaders(sapUsername?: string, sapPassword?: string)
         currentConfig = config;
     }
     
-    const { username, password, client } = currentConfig;
+    const { username, password, client, language } = currentConfig;
     const auth = Buffer.from(`${username}:${password}`).toString('base64'); // Create Basic Auth string
-    return {
+    const headers: Record<string, string> = {
         'Authorization': `Basic ${auth}`,
         'X-SAP-Client': client
     };
+    
+    if (language) {
+        headers['Accept-Language'] = language;
+    }
+    
+    return headers;
 }
 
-async function fetchCsrfToken(url: string, sapUsername?: string, sapPassword?: string): Promise<string> {
+async function fetchCsrfToken(url: string, sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string): Promise<string> {
     try {
         const response = await createAxiosInstance()({
             method: 'GET',
             url,
             headers: {
-                ...(await getAuthHeaders(sapUsername, sapPassword)),
+                ...(await getAuthHeaders(sapUsername, sapPassword, sapClient, sapLanguage)),
                 'x-csrf-token': 'fetch'
             }
         });
@@ -293,17 +301,19 @@ export async function makeAdtRequest(
     customHeaders?: Record<string, string>,
     responseType: 'text' | 'json' = 'json',
     sapUsername?: string,
-    sapPassword?: string
+    sapPassword?: string,
+    sapClient?: string,
+    sapLanguage?: string
 ) {
     if ((method === 'POST' || method === 'PUT') && !csrfToken) {
         try {
-            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword);
+            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword, sapClient, sapLanguage);
         } catch (error) {
             throw new Error('CSRF token is required for POST/PUT requests but could not be fetched');
         }
     }
     const requestHeaders = {
-        ...(await getAuthHeaders(sapUsername, sapPassword)),
+        ...(await getAuthHeaders(sapUsername, sapPassword, sapClient, sapLanguage)),
         ...(customHeaders || {})
     };
     if ((method === 'POST' || method === 'PUT') && csrfToken) {
@@ -338,7 +348,7 @@ export async function makeAdtRequest(
     } catch (error) {
         if (error instanceof AxiosError && error.response?.status === 403 &&
             error.response.data?.includes('CSRF')) {
-            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword);
+            csrfToken = await fetchCsrfToken(url, sapUsername, sapPassword, sapClient);
             const retryConfig: AxiosRequestConfig = {
                 method,
                 url,

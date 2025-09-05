@@ -15,7 +15,7 @@ Runs as either:
 - npm  
 - TypeScript (installed through devDependencies)  
 
-On Windows (PowerShell) use `$env:PORT = '6969'` for setting env variables.  
+On Windows (PowerShell) use `Example($env:PORT = '6969')` for setting env variables.  
 
 ### Install and Build
 ```powershell
@@ -31,7 +31,7 @@ npm start
 
 ### Run (remote HTTP server)
 ```powershell
-$env:PORT = "6969"; npm run start-remote
+npm run start-remote
 ```
 > Remote mode **requires `PORT`**. Process exits if it’s missing.  
 

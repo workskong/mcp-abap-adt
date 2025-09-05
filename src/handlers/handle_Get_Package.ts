@@ -5,6 +5,8 @@ interface GetPackageArgs {
   package_name: string;
   _sapUsername?: string;
   _sapPassword?: string;
+  _sapClient?: string;
+  _sapLanguage?: string;
 }
 
 export async function handleGetPackage(args: GetPackageArgs) {
@@ -13,7 +15,7 @@ export async function handleGetPackage(args: GetPackageArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Package name is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     const nodeContentsUrl = `${baseUrl}/sap/bc/adt/repository/nodestructure`;
     const nodeContentsParams = {
       parent_type: "DEVC/K",
@@ -21,7 +23,7 @@ export async function handleGetPackage(args: GetPackageArgs) {
       withShortDescriptions: true
     };
 
-    const package_structure_response = await makeAdtRequest(nodeContentsUrl, 'POST', 30000, nodeContentsParams, undefined, 'json', args._sapUsername, args._sapPassword);
+    const package_structure_response = await makeAdtRequest(nodeContentsUrl, 'POST', 30000, nodeContentsParams, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     return return_response({ data: package_structure_response.data } as any);
 
   } catch (error) {

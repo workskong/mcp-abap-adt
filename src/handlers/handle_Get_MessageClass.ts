@@ -5,6 +5,8 @@ interface MessageClassArgs {
   MessageClass: string;
   _sapUsername?: string;
   _sapPassword?: string;
+  _sapClient?: string;
+  _sapLanguage?: string;
 }
 
 export async function handle_Get_MessageClass(args: MessageClassArgs) {
@@ -14,9 +16,9 @@ export async function handle_Get_MessageClass(args: MessageClassArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Message Class name is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
+    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
     const url = `${baseUrl}/sap/bc/adt/messageclass/${messageClass}`;
-    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword);
+    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
 
     return return_response(response);
   } catch (error) {
