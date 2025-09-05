@@ -304,7 +304,7 @@ export async function makeAdtRequest(
         },
         // Use transformRequest to bypass axios's internal URL parsing
         transformRequest: [(data, headers) => {
-            // URL이 이미 올바르게 인코딩되어 있으므로 그대로 사용
+                // The URL is already properly encoded; use as-is
             return data;
         }]
     };

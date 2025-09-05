@@ -27,32 +27,32 @@ export async function handle_RuntimeDumps(args: RuntimeDumpsArgs): Promise<any> 
     let maxResults = args.maxResults ?? 1;
     let trimmedNotice = '';
     if (maxResults > 5) {
-      trimmedNotice = '요청한 maxResults가 5개를 초과하여 5개까지만 반환되고 나머지는 삭제되었습니다.';
+      trimmedNotice = 'Requested maxResults exceeded 5; only 5 items will be returned and the rest are discarded.';
       maxResults = 5;
     }
 
-    // from, to 포맷 생성
+  // Build from/to format
     const from = `${startDate}${startTime}`;
     const to = `${endDate}${endTime}`;
 
     const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
-    // SAP ADT API 호출
+  // Call SAP ADT API
     const requestUrl = `${baseUrl}/sap/bc/adt/runtime/dumps?from=${from}&to=${to}`;
     const adtRes = await makeAdtRequest(requestUrl, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword);
     let xml = adtRes.data;
 
-    // <atom:entry> 요소 개수 제한 및 카테고리 필터링
+  // Limit <atom:entry> element count and apply category filtering
     const limited = limitAtomEntriesWithCategory(xml, maxResults, category);
     const totalCount = limited.totalCount;
     const displayCount = limited.displayCount;
     xml = limited.xml;
 
-    // xml 최상단에 <atom:mcp_info> 태그 삽입
+  // Insert <atom:mcp_info> tag at top of XML
     const mcpInfoTag = `\n<atom:mcp_info>\n  <atom:timeUnit>us</atom:timeUnit>\n  <atom:sizeUnit>byte</atom:sizeUnit>\n  <atom:totalCount>${totalCount}</atom:totalCount>\n  <atom:displayCount>${displayCount}</atom:displayCount>\n</atom:mcp_info>\n`;
-    // xml 헤더 바로 뒤에 삽입 (헤더가 없으면 맨 앞)
+  // Insert right after XML header (or at the top if no header)
     const xmlWithInfo = xml.replace(/(<\?xml[^>]*>\s*)?/, (m) => m + mcpInfoTag);
 
-    // AxiosResponse 형태로 결과 래핑 (ADT 응답값 활용)
+  // Wrap result as AxiosResponse (using ADT response)
     const response: AxiosResponse = {
       status: adtRes.status,
       statusText: adtRes.statusText,
@@ -75,7 +75,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const entries = doc.getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
 
-    // category 필터링
+  // category filtering
     if (category) {
       for (let i = entries.length - 1; i >= 0; i--) {
         const entry = entries[i];
@@ -93,7 +93,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
         }
       }
     }
-    // 필터링 후 남은 entry 개수
+  // number of entries remaining after filtering
     totalCount = entries.length;
 
     // Remove <contributor>, <icon>, <link> elements (only the element itself, not parent)
@@ -107,7 +107,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
       }
     });
 
-    // entry 개수 제한
+  // limit entry count
     const filteredEntries = doc.getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
     if (filteredEntries.length > maxCount) {
       for (let i = filteredEntries.length - 1; i >= maxCount; i--) {
@@ -115,7 +115,7 @@ function limitAtomEntriesWithCategory(xmlString: string, maxCount: number, categ
         entry.parentNode?.removeChild(entry);
       }
     }
-    // 실제 보여지는 entry 개수
+  // actual displayed entry count
     displayCount = entries.length;
 
     limitedXml = new XMLSerializer().serializeToString(doc);

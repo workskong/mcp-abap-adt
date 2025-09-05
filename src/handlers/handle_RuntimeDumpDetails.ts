@@ -14,7 +14,7 @@ export async function handle_RuntimeDumpDetails(args: RuntimeDumpDetailsArgs): P
   try {
     const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword);
     if (!args?.id) {
-      throw new McpError(ErrorCode.InvalidParams, 'id 파라미터가 필요합니다');
+      throw new McpError(ErrorCode.InvalidParams, 'id parameter is required');
     }
     let decodedId = decodeURIComponent(args.id);
     let encodedId = encodeURIComponent(decodedId);

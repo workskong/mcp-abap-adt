@@ -1,5 +1,5 @@
 module.exports = {
-  preset: 'ts-jest/presets/default-esm', // ESM + TypeScript 지원
+  preset: 'ts-jest/presets/default-esm', // ESM + TypeScript
   testEnvironment: 'node',
   testMatch: [
     '<rootDir>/tests/**/*.test.ts'

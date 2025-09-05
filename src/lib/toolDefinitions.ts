@@ -1,5 +1,5 @@
 
-import * as handlers from './handlers/index';
+import * as handlers from '../handlers/index';
 
 // All handler descriptions and comments are translated to English below
 export const toolDefinitions = [

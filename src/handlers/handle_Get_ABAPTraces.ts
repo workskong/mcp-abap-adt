@@ -23,7 +23,7 @@ export async function Get_ABAPTraces(args: ABAPTraces) {
     let trimmedNotice = '';
     let limitedMax = maxResults;
     if (maxResults > 5) {
-      trimmedNotice = '요청한 maxResults가 5개를 초과하여 5개까지만 반환되고 나머지는 삭제되었습니다.';
+      trimmedNotice = 'Requested maxResults exceeded 5; only 5 items will be returned and the rest are discarded.';
       limitedMax = 5;
     }
 

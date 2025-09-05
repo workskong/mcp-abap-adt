@@ -3,9 +3,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { return_error, type SapConfig } from './src/lib/utils';
-import { toolDefinitions } from './src/toolDefinitions';
+import { toolDefinitions } from './src/lib/toolDefinitions';
 
-// === MCP 서버 클래스 ===
+// === MCP server class ===
 export class mcp_abap_adt_server {
   private server: Server;
   private sapConfig?: SapConfig;
@@ -33,7 +33,7 @@ export class mcp_abap_adt_server {
         if (!tool) {
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
         }
-        // 필수 파라미터 체크 (required만 지원)
+  // Check required parameters (only 'required' supported)
         const args = request.params.arguments || {};
         if (Array.isArray(tool.inputSchema.required)) {
           for (const reqKey of tool.inputSchema.required) {
@@ -42,7 +42,7 @@ export class mcp_abap_adt_server {
             }
           }
         }
-        // 타입 안전하게 handler 호출
+  // Call handler with type safety
         return await tool.handler(args as any);
       } catch (error) {
         return return_error(error);
@@ -65,7 +65,7 @@ const server = new mcp_abap_adt_server();
 // If started with --remote, run an HTTP wrapper that exposes the tools over HTTP
 if (process.argv.includes('--remote')) {
   // lazy import to avoid pulling Express when not needed
-  import('./src/remoteServer.js').then(mod => {
+  import('./src/lib/remoteServer.js').then(mod => {
     mod.startRemoteServer(toolDefinitions).then(() => {
       // Keep the process alive for remote server mode
       console.log('Remote server started successfully. Press Ctrl+C to stop.');

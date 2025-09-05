@@ -7,7 +7,7 @@ export function handleMcpError(error: any) {
   }
   if (error && typeof error === 'object') {
     const code = typeof error.code === 'string' ? error.code : 'INTERNAL_ERROR';
-    const message = typeof error.message === 'string' ? error.message : '알 수 없는 오류가 발생했습니다.';
+  const message = typeof error.message === 'string' ? error.message : 'An unknown error occurred.';
     return return_error({ code, message });
   }
   return return_error({ code: 'INTERNAL_ERROR', message: String(error) });
