@@ -254,7 +254,7 @@ The Docker image includes an automated health check that monitors the server sta
 | `SAP_PASSWORD` | No | - | SAP password (can also use headers) |
 | `SAP_CLIENT` | No | - | SAP client number (optional) |
 | `SAP_LANGUAGE` | No | `EN` | Default SAP language |
-| `SAP_URL` | Yes (remote mode) | - | SAP ABAP server URL with ADT services |
+| `SAP_URL` | Yes | - | SAP ABAP server URL with ADT services |
 
 ### 🔧 Setting Environment Variables
 
@@ -649,7 +649,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## 📊 Version History
 
-- **v1.3.3** - Latest stable release
+- **v1.3.3** - Latest release
 - Enhanced Docker support with Node.js 22
 - Improved error handling and diagnostics
 - Added comprehensive tool catalog
