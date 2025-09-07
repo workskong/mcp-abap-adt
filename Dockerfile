@@ -1,69 +1,100 @@
-## Updated Dockerfile
-## - Modern multistage build for a TypeScript Node.js app
-## - Node 20 LTS, build cache friendly, non-root runtime, small final image
+# =============================================================================
+# MCP ABAP ADT Server - Modern Multi-stage Dockerfile
+# =============================================================================
+# Updated: September 2025
+# - Node.js 22 LTS (latest stable)
+# - Modern TypeScript build with ES2022 target
+# - Security-hardened runtime with non-root user
+# - Optimized caching layers and small final image
+# - Health check for container orchestration
+# =============================================================================
 
 # -----------------------
 # Builder stage
 # -----------------------
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
+
+# Install security updates and dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init && \
+    apk upgrade --no-cache
 
 WORKDIR /app
 
-# Install build dependencies first (cacheable). Use package-lock when available.
+# Copy package files for dependency installation (better caching)
 COPY package.json package-lock.json* ./
-# Use npm ci when lockfile exists for reproducible installs; otherwise fall back to npm install.
-RUN if [ -f package-lock.json ]; then \
-			npm ci --prefer-offline --no-audit --progress=false; \
-		else \
-			npm install --prefer-offline --no-audit --progress=false; \
-		fi
 
-# Copy source and build
-COPY . .
-RUN npm run build --if-present
+# Install all dependencies (including dev dependencies for building)
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package-lock.json ]; then \
+        npm ci --include=dev --prefer-offline --no-audit --progress=false; \
+    else \
+        npm install --include=dev --prefer-offline --no-audit --progress=false; \
+    fi
+
+# Copy TypeScript configuration and source code
+COPY tsconfig.json ./
+COPY index.ts ./
+COPY src/ ./src/
+
+# Build the TypeScript application
+RUN npm run build
+
+# Run tests to ensure build quality (optional but recommended)
+RUN npm test
 
 # -----------------------
-# Runtime stage
+# Production runtime stage
 # -----------------------
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runtime
 
-# Use a non-root user for security
-ARG APP_USER=app
-ARG APP_UID=1000
+# Install security updates and dumb-init
+RUN apk add --no-cache dumb-init && \
+    apk upgrade --no-cache
+
+# Create non-root user for security
+ARG APP_USER=mcpabap
+ARG APP_UID=1001
+ARG APP_GID=1001
+
+RUN addgroup -g $APP_GID -S $APP_USER && \
+    adduser -u $APP_UID -S -G $APP_USER -h /app -s /bin/sh $APP_USER
 
 WORKDIR /app
 
-# Production environment
-ENV NODE_ENV=production
+# Set production environment
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--enable-source-maps --max-old-space-size=512" \
+    PORT=6969 \
+    TLS_REJECT_UNAUTHORIZED=0
 
-# Copy only what we need for runtime to keep the image small
+# Copy package files and install only production dependencies
 COPY package.json package-lock.json* ./
-# Use npm ci when lockfile exists; otherwise npm install and prune dev deps
-RUN if [ -f package-lock.json ]; then \
-			npm ci --omit=dev --prefer-offline --no-audit --progress=false; \
-		else \
-			npm install --omit=dev --prefer-offline --no-audit --progress=false; \
-		fi \
-		&& addgroup -S $APP_USER \
-		&& adduser -S -G $APP_USER -u $APP_UID $APP_USER
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package-lock.json ]; then \
+        npm ci --omit=dev --prefer-offline --no-audit --progress=false; \
+    else \
+        npm install --omit=dev --prefer-offline --no-audit --progress=false; \
+    fi && \
+    npm cache clean --force
 
-# Copy built artifacts from the builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built application from builder stage
+COPY --from=builder --chown=$APP_USER:$APP_USER /app/dist ./dist
 
-# If you rely on runtime env files, copy them explicitly (optional)
-# COPY .env.production .env
+# Copy example environment file for reference
+COPY --chown=$APP_USER:$APP_USER .env.example ./
 
-# Ensure the non-root user owns the app directory
-RUN chown -R $APP_USER:$APP_USER /app
+# Switch to non-root user
 USER $APP_USER
 
-# Runtime port (matches project convention)
-ENV PORT=6969
-EXPOSE 6969
+# Expose port
+EXPOSE $PORT
 
-# Healthcheck implemented with Node (no extra packages required)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-	CMD ["node","-e","const http=require('http'); const p=process.env.PORT||6969; const req=http.request({host:'127.0.0.1',port:p,path:'/health',method:'GET'},res=>{if(res.statusCode>=200&&res.statusCode<400)process.exit(0);process.exit(1)}); req.on('error',()=>process.exit(1)); req.end()"]
+# Add healthcheck for container orchestration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD node -e "const http=require('http');const options={hostname:'localhost',port:process.env.PORT||6969,path:'/',method:'HEAD',timeout:5000};const req=http.request(options,res=>{process.exit(res.statusCode<400?0:1)});req.on('error',()=>process.exit(1));req.on('timeout',()=>process.exit(1));req.end();"
 
-# Start the app with source-map support for better stack traces
-CMD ["node","--enable-source-maps","dist/index.js"]
+# Use dumb-init to handle signals properly in containers
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the MCP ABAP ADT server
+CMD ["node", "dist/index.js"]
