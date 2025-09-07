@@ -1,16 +1,12 @@
-import { McpError, ErrorCode } from '../lib/utils';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
+import { McpError, ErrorCode, SapAuthParams } from '../lib/utils';
+import { getBaseUrlFromAuth, makeAdtRequestWithAuth, return_error, return_response } from '../lib/utils';
 import { DOMParser, XMLSerializer } from 'xmldom';
 import { AxiosResponse } from 'axios';
 
-interface ABAPTraces {
+interface ABAPTraces extends SapAuthParams {
   user?: string;
   maxResults?: number;
   objectNameFilter?: string;
-  _sapUsername?: string;
-  _sapPassword?: string;
-  _sapClient?: string;
-  _sapLanguage?: string;
 }
 
 export async function Get_ABAPTraces(args: ABAPTraces) {
@@ -19,7 +15,7 @@ export async function Get_ABAPTraces(args: ABAPTraces) {
       throw new McpError(ErrorCode.InvalidParams, 'User is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const baseUrl = await getBaseUrlFromAuth(args);
     const user = args.user.trim().toUpperCase();
     const maxResults = args.maxResults ?? 5;
     let trimmedNotice = '';
@@ -30,7 +26,7 @@ export async function Get_ABAPTraces(args: ABAPTraces) {
     }
 
     const url = `${baseUrl}/sap/bc/adt/runtime/traces/abaptraces?user=${user}`;
-    const adtRes = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'text', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const adtRes = await makeAdtRequestWithAuth(url, 'GET', 30000, undefined, undefined, 'text', args);
     let xml = adtRes.data;
 
     const limited = limitAtomEntries(xml, limitedMax, args.objectNameFilter);

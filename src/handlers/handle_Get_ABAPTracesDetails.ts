@@ -1,14 +1,10 @@
 
-import { McpError, ErrorCode } from '../lib/utils';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
+import { McpError, ErrorCode, SapAuthParams } from '../lib/utils';
+import { getBaseUrlFromAuth, makeAdtRequestWithAuth, return_error, return_response } from '../lib/utils';
 
-interface ABAPTracesDetails {
+interface ABAPTracesDetails extends SapAuthParams {
   type?: string; // 'dbAccesses', 'hitlist', 'statements'
   id?: string;
-  _sapUsername?: string;
-  _sapPassword?: string;
-  _sapClient?: string;
-  _sapLanguage?: string;
 }
 /*
  * @param args Parameters for runtime dump detail query
@@ -21,7 +17,7 @@ export async function handle_Get_ABAPTracesDetails(args: ABAPTracesDetails): Pro
     throw new McpError(ErrorCode.InvalidParams, 'Both "id" and "type" parameters are required.');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage); if (args.type === 'all') {
+    const baseUrl = await getBaseUrlFromAuth(args); if (args.type === 'all') {
     throw new McpError(ErrorCode.InvalidParams, 'The "type" parameter must be one of "dbAccesses", "hitlist", or "statements".');
     }
     const tracePaths: Record<string, string> = {
@@ -33,7 +29,7 @@ export async function handle_Get_ABAPTracesDetails(args: ABAPTracesDetails): Pro
     throw new McpError(ErrorCode.InvalidParams, 'The "type" parameter must be one of "dbAccesses", "hitlist", or "statements".');
     }
     const url = `${baseUrl}${tracePaths[args.type]}`;
-    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const response = await makeAdtRequestWithAuth(url, 'GET', 30000, undefined, undefined, 'json', args);
     return return_response(response);
   } catch (error) {
     return return_error(error);

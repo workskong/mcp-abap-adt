@@ -1,12 +1,8 @@
-import { McpError, ErrorCode } from '../lib/utils';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
+import { McpError, ErrorCode, SapAuthParams } from '../lib/utils';
+import { getBaseUrlFromAuth, makeAdtRequestWithAuth, return_error, return_response } from '../lib/utils';
 
-interface MessageClassArgs {
+interface MessageClassArgs extends SapAuthParams {
   MessageClass: string;
-  _sapUsername?: string;
-  _sapPassword?: string;
-  _sapClient?: string;
-  _sapLanguage?: string;
 }
 
 export async function handle_Get_MessageClass(args: MessageClassArgs) {
@@ -16,9 +12,9 @@ export async function handle_Get_MessageClass(args: MessageClassArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Message Class name is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const baseUrl = await getBaseUrlFromAuth(args);
     const url = `${baseUrl}/sap/bc/adt/messageclass/${messageClass}`;
-    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const response = await makeAdtRequestWithAuth(url, 'GET', 30000, undefined, undefined, 'json', args);
 
     return return_response(response);
   } catch (error) {

@@ -1,12 +1,8 @@
-import { McpError, ErrorCode } from '../lib/utils';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
+import { McpError, ErrorCode, SapAuthParams } from '../lib/utils';
+import { getBaseUrlFromAuth, makeAdtRequestWithAuth, return_error, return_response } from '../lib/utils';
 
-interface GetPackageArgs {
+interface GetPackageArgs extends SapAuthParams {
   package_name: string;
-  _sapUsername?: string;
-  _sapPassword?: string;
-  _sapClient?: string;
-  _sapLanguage?: string;
 }
 
 export async function handleGetPackage(args: GetPackageArgs) {
@@ -15,7 +11,7 @@ export async function handleGetPackage(args: GetPackageArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Package name is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const baseUrl = await getBaseUrlFromAuth(args);
     const nodeContentsUrl = `${baseUrl}/sap/bc/adt/repository/nodestructure`;
     const nodeContentsParams = {
       parent_type: "DEVC/K",
@@ -23,7 +19,7 @@ export async function handleGetPackage(args: GetPackageArgs) {
       withShortDescriptions: true
     };
 
-    const package_structure_response = await makeAdtRequest(nodeContentsUrl, 'POST', 30000, nodeContentsParams, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const package_structure_response = await makeAdtRequestWithAuth(nodeContentsUrl, 'POST', 30000, nodeContentsParams, undefined, 'json', args);
     return return_response({ data: package_structure_response.data } as any);
 
   } catch (error) {

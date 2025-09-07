@@ -34,6 +34,43 @@ export type SapConfig = {
     language?: string;
 };
 
+// Common SAP authentication parameters interface for all handlers
+export interface SapAuthParams {
+    _sapUsername?: string;
+    _sapPassword?: string;
+    _sapClient?: string;
+    _sapLanguage?: string;
+}
+
+// Helper function to get base URL using SapAuthParams
+export async function getBaseUrlFromAuth(auth: SapAuthParams): Promise<string> {
+    return getBaseUrl(auth._sapUsername, auth._sapPassword, auth._sapClient, auth._sapLanguage);
+}
+
+// Helper function for making ADT requests using SapAuthParams  
+export async function makeAdtRequestWithAuth(
+    url: string,
+    method: string = 'GET',
+    timeout: number = 30000,
+    data?: any,
+    headers?: any,
+    responseType?: 'text' | 'json',
+    auth?: SapAuthParams
+): Promise<any> {
+    return makeAdtRequest(
+        url, 
+        method, 
+        timeout, 
+        data, 
+        headers, 
+        responseType,
+        auth?._sapUsername,
+        auth?._sapPassword, 
+        auth?._sapClient,
+        auth?._sapLanguage
+    );
+}
+
 // Example function to get SAP connection information from headers or environment variables as fallback
 export function getConfig(sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string): SapConfig {
     // URL is now set dynamically via X-SAP_URL header in remoteServer.ts

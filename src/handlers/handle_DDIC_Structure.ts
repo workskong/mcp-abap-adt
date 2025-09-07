@@ -1,12 +1,8 @@
-import { McpError, ErrorCode, convertXmlToJson } from '../lib/utils';
-import { makeAdtRequest, return_error, return_response, getBaseUrl } from '../lib/utils';
+import { McpError, ErrorCode, convertXmlToJson, SapAuthParams } from '../lib/utils';
+import { getBaseUrlFromAuth, makeAdtRequestWithAuth, return_error, return_response } from '../lib/utils';
 
-interface DDICStructureArgs {
+interface DDICStructureArgs extends SapAuthParams {
   object_name: string;
-  _sapUsername?: string;
-  _sapPassword?: string;
-  _sapClient?: string;
-  _sapLanguage?: string;
 }
 
 export async function handle_DDIC_Structure(args: DDICStructureArgs) {
@@ -15,10 +11,10 @@ export async function handle_DDIC_Structure(args: DDICStructureArgs) {
       throw new McpError(ErrorCode.InvalidParams, 'Object name is required');
     }
 
-    const baseUrl = await getBaseUrl(args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const baseUrl = await getBaseUrlFromAuth(args);
 
     const url = `${baseUrl}/sap/bc/adt/ddic/elementinfo?path=${args.object_name}`;
-    const response = await makeAdtRequest(url, 'GET', 30000, undefined, undefined, 'json', args._sapUsername, args._sapPassword, args._sapClient, args._sapLanguage);
+    const response = await makeAdtRequestWithAuth(url, 'GET', 30000, undefined, undefined, 'json', args);
 
     return return_response(response);
   } catch (error) {
