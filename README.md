@@ -72,7 +72,8 @@ Below are examples for MCP clients (VS Code, Eclipse). Preserve your actual cred
     { "id": "SAP_USERNAME", "type": "promptString", "description": "SAP Username", "password": false },
     { "id": "SAP_PASSWORD", "type": "promptString", "description": "SAP Password", "password": true },
     { "id": "SAP_CLIENT", "type": "promptString", "description": "SAP Client", "password": false },
-    { "id": "SAP_LANGUAGE", "type": "promptString", "description": "SAP Language", "password": false }
+    { "id": "SAP_LANGUAGE", "type": "promptString", "description": "SAP Language", "password": false },
+    { "id": "SAP_URL", "type": "promptString", "description": "SAP URL", "password": false }
   ],
   "servers": {
     "mcp-abap-adt": {
@@ -82,7 +83,8 @@ Below are examples for MCP clients (VS Code, Eclipse). Preserve your actual cred
         "X-SAP_USERNAME": "${input:SAP_USERNAME}",
         "X-SAP_PASSWORD": "${input:SAP_PASSWORD}",
         "X-SAP_CLIENT": "${input:SAP_CLIENT}",
-        "X-SAP_LANGUAGE": "${input:SAP_LANGUAGE}"
+        "X-SAP_LANGUAGE": "${input:SAP_LANGUAGE}",
+        "X-SAP_URL": "${input:SAP_URL}"
       }
     }
   }
@@ -104,7 +106,8 @@ Below are examples for MCP clients (VS Code, Eclipse). Preserve your actual cred
         "SAP_USERNAME": "DEV00",
         "SAP_PASSWORD": "XXXX",
         "SAP_CLIENT": "001",
-        "SAP_LANGUAGE": "EN"
+        "SAP_LANGUAGE": "EN",
+        "SAP_URL": "http://your-sap-server:50000"
       }
     }
   }
@@ -126,7 +129,8 @@ These snippets show either SSE over HTTP (remote) or launching the server as a c
           "X-SAP_USERNAME": "DEV00",
           "X-SAP_PASSWORD": "XXXX",
           "X-SAP_CLIENT": "001",
-          "X-SAP_LANGUAGE": "EN"
+          "X-SAP_LANGUAGE": "EN",
+          "X-SAP_URL": "http://your-sap-server:50000"
         }
       }
     }
@@ -149,7 +153,8 @@ These snippets show either SSE over HTTP (remote) or launching the server as a c
         "SAP_USERNAME": "DEV00",
         "SAP_PASSWORD": "XXXX",
         "SAP_CLIENT": "001",
-        "SAP_LANGUAGE": "EN"
+        "SAP_LANGUAGE": "EN",
+        "SAP_URL": "http://your-sap-server:50000"
       }
     }
   }
@@ -189,6 +194,7 @@ Note: The image's HEALTHCHECK may use `wget`/`curl` against `/health`; ensure th
 | `SAP_PASSWORD` / `X-Password` | No | SAP password (can be supplied via header or env)
 | `SAP_CLIENT` | No | SAP client number (optional)
 | `SAP_LANGUAGE` | No | Default language (optional)
+| `SAP_URL` / `X-SAP_URL` | Yes (remote mode) | SAP ABAP server URL (required for remote connections)
 
 ***
 
@@ -228,14 +234,14 @@ Use `GET /tools` to retrieve the full catalog and JSON Schemas for each tool.
 ### Call a tool (PowerShell)
 ```powershell
 Invoke-RestMethod -Uri http://localhost:6969/call -Method POST \
-  -Headers @{ "X-Username"="DEV00"; "X-Password"="XXXX" } \
+  -Headers @{ "X-Username"="DEV00"; "X-Password"="XXXX"; "X-SAP_URL"="http://your-sap-server:50000" } \
   -Body (@{ tool="SearchObject"; arguments=@{ query="SBOOK" } } | ConvertTo-Json -Compress)
 ```
 
 ### Call a tool (curl)
 ```bash
 curl -X POST http://localhost:6969/call \
-     -H "X-Username: DEV00" -H "X-Password: XXXX" \
+     -H "X-Username: DEV00" -H "X-Password: XXXX" -H "X-SAP_URL: http://your-sap-server:50000" \
      -H "Content-Type: application/json" \
      -d '{"tool":"SearchObject","arguments":{"query":"SBOOK"}}'
 ```
@@ -259,6 +265,7 @@ How to add a new tool:
 
 ## ❗ Troubleshooting
  - Error: PORT required → set `$env:PORT = "6969"` (PowerShell) or export `PORT` in your environment.
+ - Error: SAP_URL required → provide `X-SAP_URL` header in your MCP client configuration.
  - Healthcheck fails → confirm `wget`/`curl` is available in the container image or adjust the Dockerfile.
  - Authentication issues → try Basic Auth or headers (`X-Username`/`X-Password` or `X-SAP_USERNAME`/`X-SAP_PASSWORD`).
 

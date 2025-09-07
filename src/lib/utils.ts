@@ -36,13 +36,18 @@ export type SapConfig = {
 
 // Example function to get SAP connection information from headers or environment variables as fallback
 export function getConfig(sapUsername?: string, sapPassword?: string, sapClient?: string, sapLanguage?: string): SapConfig {
+    // URL is now set dynamically via X-SAP_URL header in remoteServer.ts
     const url = process.env.SAP_URL;
     const username = sapUsername || process.env.SAP_USERNAME;
     const password = sapPassword || process.env.SAP_PASSWORD;
     const client = sapClient || process.env.SAP_CLIENT;
     const language = sapLanguage || process.env.SAP_LANGUAGE || 'EN';
-    if (!url || !username || !password || !client) {
-        throw new Error('All SAP connection parameters (URL, USERNAME, PASSWORD, CLIENT) must be provided via headers or environment variables.');
+    
+    if (!url) {
+        throw new Error('SAP_URL must be provided via X-SAP_URL header from MCP client.');
+    }
+    if (!username || !password || !client) {
+        throw new Error('SAP connection parameters (USERNAME, PASSWORD, CLIENT) must be provided via headers or environment variables.');
     }
     return { url, username, password, client, language };
 }

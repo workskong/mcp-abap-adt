@@ -36,8 +36,19 @@ function extractCustomHeaders(req: Request): { username: string; password: strin
   const password = req.headers['x-sap_password'] as string;
   const client = req.headers['x-sap_client'] as string;
   const language = req.headers['x-sap_language'] as string;
+  const sapUrl = req.headers['x-sap_url'] as string;
 
-  console.log('Extracted SAP headers:', { username, password: password ? '***' : undefined, client, language });
+  console.log('Extracted SAP headers:', { username, password: password ? '***' : undefined, client, language, sapUrl });
+
+  // X-SAP_URL header is now required - no fallback to .env
+  if (!sapUrl) {
+    console.error('X-SAP_URL header is required but not provided');
+    return null;
+  }
+
+  // Set the SAP_URL environment variable from header
+  process.env.SAP_URL = sapUrl;
+  console.log('SAP_URL environment variable set to:', sapUrl);
 
   if (username && password && client && language) {
     return { username, password, client, language };
