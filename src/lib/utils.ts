@@ -43,8 +43,9 @@ export interface SapAuthParams {
 }
 
 // Helper function to get base URL using SapAuthParams
-export async function getBaseUrlFromAuth(auth: SapAuthParams): Promise<string> {
-    return getBaseUrl(auth._sapUsername, auth._sapPassword, auth._sapClient, auth._sapLanguage);
+export async function getBaseUrlFromAuth(auth?: SapAuthParams): Promise<string> {
+    const validatedAuth = validateAndGetSapAuth(auth);
+    return getBaseUrl(validatedAuth._sapUsername, validatedAuth._sapPassword, validatedAuth._sapClient, validatedAuth._sapLanguage);
 }
 
 // Helper function for making ADT requests using SapAuthParams  
@@ -57,6 +58,7 @@ export async function makeAdtRequestWithAuth(
     responseType?: 'text' | 'json',
     auth?: SapAuthParams
 ): Promise<any> {
+    const validatedAuth = validateAndGetSapAuth(auth);
     return makeAdtRequest(
         url, 
         method, 
@@ -64,10 +66,10 @@ export async function makeAdtRequestWithAuth(
         data, 
         headers, 
         responseType,
-        auth?._sapUsername,
-        auth?._sapPassword, 
-        auth?._sapClient,
-        auth?._sapLanguage
+        validatedAuth._sapUsername,
+        validatedAuth._sapPassword, 
+        validatedAuth._sapClient,
+        validatedAuth._sapLanguage
     );
 }
 
@@ -81,12 +83,44 @@ export function getConfig(sapUsername?: string, sapPassword?: string, sapClient?
     const language = sapLanguage || process.env.SAP_LANGUAGE || 'EN';
     
     if (!url) {
-        throw new Error('SAP_URL must be provided via X-SAP_URL header from MCP client.');
+        throw new Error('SAP_URL must be provided via X-SAP_URL header from MCP client or set in environment variables.');
     }
     if (!username || !password || !client) {
         throw new Error('SAP connection parameters (USERNAME, PASSWORD, CLIENT) must be provided via headers or environment variables.');
     }
     return { url, username, password, client, language };
+}
+
+// Helper function to validate SAP authentication parameters and provide fallback to environment variables
+export function validateAndGetSapAuth(auth?: SapAuthParams): SapAuthParams {
+    if (!auth) {
+        auth = {};
+    }
+    
+    // If any parameter is missing, try to get it from environment variables
+    const username = auth._sapUsername || process.env.SAP_USERNAME;
+    const password = auth._sapPassword || process.env.SAP_PASSWORD;
+    const client = auth._sapClient || process.env.SAP_CLIENT;
+    const language = auth._sapLanguage || process.env.SAP_LANGUAGE || 'EN';
+    
+    if (!username || !password || !client) {
+        const missingParams: string[] = [];
+        if (!username) missingParams.push('SAP_USERNAME');
+        if (!password) missingParams.push('SAP_PASSWORD');
+        if (!client) missingParams.push('SAP_CLIENT');
+        
+        throw new Error(
+            `Missing required SAP connection parameters: ${missingParams.join(', ')}. ` +
+            `Please provide them as function parameters or set them in your .env file.`
+        );
+    }
+    
+    return {
+        _sapUsername: username,
+        _sapPassword: password,
+        _sapClient: client,
+        _sapLanguage: language
+    };
 }
 import convert from 'xml-js';
 

@@ -250,47 +250,51 @@ The Docker image includes an automated health check that monitors the server sta
 | `PORT` | Yes (remote mode) | `6969` | TCP port for HTTP server |
 | `NODE_ENV` | No | `production` | Environment mode (`production`, `development`) |
 | `TLS_REJECT_UNAUTHORIZED` | No | `0` | TLS certificate validation (0=disabled, 1=enabled) |
-| `SAP_USERNAME` | No | - | SAP username (can also use headers) |
-| `SAP_PASSWORD` | No | - | SAP password (can also use headers) |
-| `SAP_CLIENT` | No | - | SAP client number (optional) |
-| `SAP_LANGUAGE` | No | `EN` | Default SAP language |
 | `SAP_URL` | Yes | - | SAP ABAP server URL with ADT services |
+| `SAP_USERNAME` | No | - | SAP username (fallback when not provided via function parameters) |
+| `SAP_PASSWORD` | No | - | SAP password (fallback when not provided via function parameters) |
+| `SAP_CLIENT` | No | - | SAP client number (fallback when not provided via function parameters) |
+| `SAP_LANGUAGE` | No | `EN` | Default SAP language (fallback when not provided via function parameters) |
 
 ### 🔧 Setting Environment Variables
 
 **Windows PowerShell:**
 ```powershell
 $env:PORT = "6969"
-$env:SAP_URL = "http://your-sap-server:50000"
+$env:SAP_URL = "https://your-sap-server.company.com:8000"
+$env:SAP_USERNAME = "your_username"
+$env:SAP_PASSWORD = "your_password"
+$env:SAP_CLIENT = "100"
+$env:SAP_LANGUAGE = "EN"
 $env:TLS_REJECT_UNAUTHORIZED = "0"
 ```
 
 **Linux/macOS:**
 ```bash
 export PORT=6969
-export SAP_URL="http://your-sap-server:50000"
+export SAP_URL="https://your-sap-server.company.com:8000"
+export SAP_USERNAME="your_username"
+export SAP_PASSWORD="your_password"
+export SAP_CLIENT="100"
+export SAP_LANGUAGE="EN"
 export TLS_REJECT_UNAUTHORIZED=0
 ```
 
 **Using .env file:**
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your SAP connection details
 ```
 
----
+### 🔐 Authentication Priority
 
-## ⚙️ Environment Variables
+The server supports multiple authentication methods with the following priority:
 
-| Variable   | Required | Purpose |
-|------------|----------|---------|
-| `PORT`     | Yes (remote mode) | TCP port for HTTP server |
-| `NODE_ENV` | No       | `production` or `development` |
-| `SAP_USERNAME` / `X-Username` | No | SAP username (can be supplied via header or env for local stdio mode)
-| `SAP_PASSWORD` / `X-Password` | No | SAP password (can be supplied via header or env)
-| `SAP_CLIENT` | No | SAP client number (optional)
-| `SAP_LANGUAGE` | No | Default language (optional)
-| `SAP_URL` / `X-SAP_URL` | Yes (remote mode) | SAP ABAP server URL (required for remote connections)
+1. **Function Parameters** - Highest priority (directly passed to each tool call)
+2. **Environment Variables** - Fallback when function parameters are empty
+3. **Headers** - Used by remote HTTP mode for per-request authentication
+
+When SAP authentication parameters (`_sapUsername`, `_sapPassword`, `_sapClient`, `_sapLanguage`) are not provided in function calls, the server automatically falls back to environment variables. This allows for flexible deployment scenarios where credentials can be set once in the environment.
 
 ---
 
