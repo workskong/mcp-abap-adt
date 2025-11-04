@@ -1,5 +1,5 @@
 {
-  "name": "@orchestraight.co/mcp-abap-adt",
+  "name": "mcp-abap-adt",
   "version": "1.3.3",
   "description": "MCP server for SAP ABAP ADT: unified access to ABAP metadata, source code, and diagnostics.",
   "main": "dist/index.js",
